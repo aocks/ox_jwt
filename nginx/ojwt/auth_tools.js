@@ -78,10 +78,12 @@ function decode_jwt_verify(r) {
     return msg
   }
   r.log('jwt.decode succeeded')
-  if (result.Host != r.headersIn['Host']) {
-    let msg = `failed: token host is ${result.Host} != r.HeadersIn["Host"]`
-    r.log(`Returning msg: ${msg}`)
-    return msg
+  if (result.Host) { // provided a Host in the token so check if it matches
+    if (result.Host != r.headersIn['Host']) {
+      let msg = `failed: token Host is ${result.Host} != r.HeadersIn["Host"]`
+      r.log(`Returning msg: ${msg}`)
+      return msg
+    }
   }
   if (! from_cookie) {
     r.log('will set response cookie')

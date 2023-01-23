@@ -9,6 +9,7 @@
 # Indicate targets which are not files but commands
 .PHONY: clean help lint
 
+
 # Create a simple python script to show help
 define PRINT_HELP_PYSCRIPT
 import re, sys
@@ -33,7 +34,7 @@ private_key.pem: ## Make private key using otools.js
 	node otools.js make_priv_key -o $@
 
 ## Make public key from private key via otools.js
-public_key.pem: private_key.pem  
+public_key.pem: private_key.pem
 	node otools.js make_pub_key -o $@ -i $<
 
 test_priv_key.pem:  ## Make test private key using otools.js
@@ -48,9 +49,9 @@ my_keys.js: public_key.pem test_pub_key.pem
 	node otools.js make_keys
 
 ## Make production JWT for testing.
-prod_test_jwt.txt:  private_key.pem my_keys.js 
+prod_test_jwt.txt:  private_key.pem my_keys.js
 	node otools encode -k private_key.pem -m "test key" \
-           -exp `date --date=tomorrow` -o $@
+           --host example.com -exp `date --date=tomorrow` -o $@
 
 test:   ## Run tests (generating required keys and things first if necessary)
 	$(MAKE) run_jest
@@ -73,4 +74,4 @@ do_main.js: my_keys.js
 
 clean:  ## Clean out intermediate files which we can auto-generate.
 	rm -f ojwt.js main.js public_key.pem test_*_key.pem my_keys.js \
-              *test_jwt.txt
+              *test_jwt.txt *\~

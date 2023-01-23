@@ -1,6 +1,6 @@
 
 * Introduction
 
-The =ox_jwt= repo provides some simple tools for working with JSON Web
+The =ox_jwt= repository provides some simple tools for working with JSON Web
 Tokens (JWTs).
 

@@ -32,6 +32,12 @@ The =owjt.js= file produced here provides the following features:
      (via a cookie) so the JWT does not need to be in the URL after
      the initial authentication.
 
+* Quickstart
+
+The following shows you how to quickly start using ox_jwt:
+
+FIXME
+
 * Setup
 
 You will need to install a recent version of nodejs (e.g., see [[https://www.rosehosting.com/blog/how-to-install-nodejs-on-ubuntu-22-04/][docs on

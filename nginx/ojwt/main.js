@@ -1,41 +1,54 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.auth_tools = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 
-// We use the jwt-simple library and the local my_keys.js (which you
-// can create manually or by using "node otools.js make_keys") with a
-// simple decode_jwt method for nginx.
+/**
+ * We use the jwt-simple library and the local my_keys.js (which you
+ * can create manually or by using "node otools.js make_keys") with a
+ * simple decode_jwt method for nginx.
 
-// Note: jwt-simple package seems better than jsonwebtoken since the
-// NGINX javascript engine (njs) is flaky and crashes strangely
-// when using jsonwebtoken.
+ * Note: jwt-simple package seems better than jsonwebtoken since the
+ * NGINX javascript engine (njs) is flaky and crashes strangely
+ * when using jsonwebtoken.
+ */
 
 const jwt = require('jwt-simple')
 const my_keys = require('./my_keys.js')
 
-function cookieParser(cookieString) {
-  if (cookieString === "")
+/**
+ * Takes cookie string from header and parses to dictionary of cookies.
+ * For example, doing `parseCookiesToDict(cookieStr)["jwtcookie"]` will
+ * give you the value of the cookie named "jwtcookie" in `cookieStr`.
+ *
+ * @param {string} cookieStr The cookie string from an HTTP header to parse.
+ * @return {number} Dict representation of the cookies.
+ *
+ */
+function parseCookiesToDict(cookieStr) {
+  if (cookieStr === "")
     return {};
 
-  let pairs = cookieString.split(";");
+  let pairs = cookieStr.split(";");
   let splittedPairs = pairs.map(cookie => cookie.split("="));
   const cookieObj = splittedPairs.reduce(function (obj, cookie) {
-    // cookie[0] is the key of cookie
-    // cookie[1] is the value of the cookie
-    // decodeURIComponent() decodes the cookie
-    // string, to handle cookies with special
-    // characters, e.g. '$'.
-    // string.trim() trims the blank spaces
-    // auround the key and value.
-    obj[decodeURIComponent(cookie[0].trim())]
-      = decodeURIComponent(cookie[1].trim());
+    let cookieKey = cookie[0]
+    let cookieVal = cookie[1]
+    // Use decodeURIComponent() for handling special characters like '$'.
+    obj[decodeURIComponent(cookieKey.trim())]
+      = decodeURIComponent(cookieVal.trim());
     return obj;
   }, {})
   return cookieObj;
 }
 
-// The decode_jwt_verify is a helper function which takes in
-// an HTTP request from nginx, extracts the JWT or token, and
-// verifies it. This is intended to be called by decode_jwt
-// and not called directly.
+/**
+ * Helper function to take HTTP request from nginx, extract JWT ot token,
+ * and verify it. This should mainly be called by decode_jwt and not directly.
+ *
+ * @param {obj} r The HTTP request we are trying to prase.
+ * @return {string} Either a string of the form `'failed: <reason>'` if
+ *                  the JWT is invalid or a JSON representation of the
+ *                  JWT payload.
+ *
+ */
 function decode_jwt_verify(r) {
   let token = r.args.jwt
   let cookie_headers = r.headersIn['Cookie']
@@ -44,8 +57,8 @@ function decode_jwt_verify(r) {
   if ( token ) {
     r.log(`auth_tools.js parsing token`)
   } else if ( cookie_headers ) {
-    r.log('no JWT in args so trying cookie headers')
-    let cookies = cookieParser(cookie_headers)
+    r.log('no JWT in request args so trying cookie headers')
+    let cookies = parseCookiesToDict(cookie_headers)
     token = cookies["jwtcookie"];
     r.log(`extracted token from cookie: ${token}`)
     from_cookie = true
@@ -66,10 +79,12 @@ function decode_jwt_verify(r) {
     return msg
   }
   r.log('jwt.decode succeeded')
-  if (result.Host != r.headersIn['Host']) {
-    let msg = `failed: token host is ${result.Host} != r.HeadersIn["Host"]`
-    r.log(`Returning msg: ${msg}`)
-    return msg
+  if (result.Host) { // provided a Host in the token so check if it matches
+    if (result.Host != r.headersIn['Host']) {
+      let msg = `failed: token Host is ${result.Host} != r.HeadersIn["Host"]`
+      r.log(`Returning msg: ${msg}`)
+      return msg
+    }
   }
   if (! from_cookie) {
     r.log('will set response cookie')
@@ -78,10 +93,32 @@ function decode_jwt_verify(r) {
   return JSON.stringify(result);
 }
 
-function decode_jwt(r) {
+
+/**
+ * Main function for nginx to use to decode a JWT in a request. If the JWT
+ * is missing or invalid we return `'failed<reason>'` where `<reason>` is
+ * a possibly empty string indicating the reason decoding failed. If the JWT
+ * is valid, then we return a JSON representation of the payload.
+ *
+ * The idea is that you can use a line like
+ *
+ *     js_set $my_jwt auth_tools.decode_jwt;
+ *
+ * in your nginx config to set the value of the variable `my_jwt` to the
+ * result of trying to decode the JWT and then have nginx take actions
+ * based on whether the JWT is valid and what it contains.
+ *
+ *
+ * @param {obj} req The HTTP request we are trying to prase.
+ * @return {string} Either a string of the form `'failed: <reason>'` if
+ *                  the JWT is invalid or a JSON representation of the
+ *                  JWT payload.
+ *
+ */
+function decode_jwt(req) {
     let result = "failed";
     try {
-        result = decode_jwt_verify(r);
+        result = decode_jwt_verify(req);
     } catch (error) {
         result = `failed with error: ${error}`;
     }
@@ -93,51 +130,51 @@ module.exports = {decode_jwt, decode_jwt_verify}
 
 },{"./my_keys.js":2,"jwt-simple":135}],2:[function(require,module,exports){
 const public_key = `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzp87EC5G1b17J8hyTSe2
-pdEIvMWqOuBBMDcchUHn+K2rOlSdqOO+U7OZx9cbfCvmQwaE692rUlEyMyH9lOsM
-LfNN6dTS+QMZi60WTxWHD6qogr0Y9H0YSHxr6dMznuLGtI8nXqDkoaj82LQKrTbG
-IKUBIHcgeLruJEbqUuDYOphJO5TTWe4wmzWhzntM1sn4PmH6Zn8246kDCtmDOLYo
-QelmyGRhXJC92PS0MZNTt6x218NjvmN1a16bj7XIfRwVkWB8i4t8pbjXL9ty62AP
-ilwE5A/jA7Kti6TDtTppSocfJWxNDlXw0bm2hAGdfQK3LnYj5FfQ8AJ8tx69GZxo
-FQIDAQAB
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA76NfBZg6ceGdJvBRMalk
+CA/sufa68kTy5RsMc/Cqjogv301ir/GNAn89lpjBzLPYxoCme3Dl50bGmWC0BfQU
+PLvkx1bkEpoUqr6xwI+F5EYI1bogtYH4b3HAJQunZ5/z0sbmc9TE+7tA5iityfWl
+m6nfA72SfBmIlaneK7JNjY6OY2Kx37k3LNbhn/CmfH5BWvpS67YQS57iXP6Ntbm7
+GTet5B3Z4NVkiU5+4f1fxhbvBwi49zROW86Fcs94Eiu9QG6SO2xPuc7U5W6LSPMw
+VaXJ/8j+x9xb2MKluK9gAFtcWnAbT04wRc7+JN+7qxdLOc9u62Yi0Z2Na43GIFZP
+/wIDAQAB
 -----END PUBLIC KEY-----
 `
 const test_pub_key = `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxhdOj7urP45UegggCYx5
-8jGSfoo4bBecrnAWTP4GhjE0YDx8nyfOHvfVDSxNoiEbmE9jabl9Xf3iAbeJg8yy
-XbuUdMNgqM1y+yJag9KB4yNbM4DpEh77ic6a6hsgTxOX1pbWX8xD3QQvfzYcfQYc
-2VlsycEtz/VIZJke5c2aVr5wxDDsbDSsJPh4T2dbZbc98quHSbLdQ7EEqy+dunRf
-+CcVNYpkUUN294djgrQSib6WMgrHHn1PrXvDxADjJTbObdiMNpYQ29GXzur8TWuC
-dHGuciy3jQ7SnIdBFXDF1Ui/DNtfjN+4nBFDnopmeMvoSXckqqod+1pMC66wkEcc
-swIDAQAB
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArfbCPEH56q61+jlMP+WD
+glsSgI+O6JeEjy9dGeSLOodFy0oJOZo7umiuJJI3uMhsCMs2PXMHRq2ph42CgsCO
+2q00462iktxRcrSekHOzwSxpg9TVT0oPA6E9OmScwmwCv2yFvkYqf7Hua+Di8nx3
+NKE7sz9EROuYqzZgWiMdwhkt6kH2dJoZ1D10+2tI6cpjyr6gzReigum7gDOeVBap
+rGQ8KSMpJ+ora2Mf+/zc4MvkkjuJlEsfXnPEEXFm3UQXnKGcArR1aVUfSDvPaDxY
++hBuw+RDOciv5pkbJDd/5cGSuJIeYUrocaOSxNaMDlFUVfhppRGqajxEZXzRUzLC
+iwIDAQAB
 -----END PUBLIC KEY-----
 `
 const test_priv_key = `-----BEGIN RSA PRIVATE KEY-----
-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
+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
 -----END RSA PRIVATE KEY-----
 `
 module.exports = { public_key, test_pub_key, test_priv_key }

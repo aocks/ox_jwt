@@ -10,9 +10,6 @@
  *
  * ***********************************************************/
 
-"use strict;"
-
-//const auth_tools = require('./auth_tools.js');//FIXME
 const jwt = require('jwt-simple')
 const fs = require('fs')
 const { exec } = require('child_process');
@@ -93,8 +90,8 @@ function _do_package(options, cmd) {
 // This is a hack to make the decode_jwt function visible at top level
 // and export it so that an nginx njs script can see it.
 
-var decode_jwt = auth_tools["decode_jwt"]; export
-default {decode_jwt}
+var decode_jwt = auth_tools["decode_jwt"];
+export default {decode_jwt}
 `)
 
 }
@@ -121,6 +118,22 @@ function _do_encode(options, cmd) {
   }
 }
 
+
+function _do_decode(options, cmd) {
+  let my_jwt = fs.readFileSync(options.input).toString()
+  let req = {
+    args: {
+      jwt: my_jwt
+    },
+    headersIn: {
+    },
+    headersOut: {
+    },
+    log: console.log
+  }
+  let result = auth_tools.decode_jwt(req)
+  console.log(`Result of decoding JWT:\n${result}\n`)
+}
 
 
 program.command('package')
@@ -195,6 +208,15 @@ program.command('encode')
   .option('-o, --output <path>', 'Output file to write JWT to.')
   .action((options, cmd) => {
     _do_encode(options, cmd)
+  })
+
+program.command('decode')
+  .description(
+    'Decode and veriy a signed JSON Web Token (JWT).')
+  .requiredOption('-i, --input <path>',
+                  'Path to file containing signed JWT.')
+  .action((options, cmd) => {
+    _do_decode(options, cmd)
   })
 
 
