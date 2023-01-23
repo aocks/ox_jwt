@@ -1,0 +1,9 @@
+
+# Ignore node_modules since we download that based on package.json
+node_modules
+
+# Never check in any encryption keys in PEM files or things that look like JWTs
+*jwt.txt*
+*.key
+*.pem
+

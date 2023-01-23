@@ -1,0 +1,52 @@
+
+
+* Introduction
+
+This sub-direction provides a javascript implementation of JWT
+authentication to use in NGINX. While the NGINX PLUS commercial web
+server provides some JWT authentication tools, it is nice to have an
+open source implementation like =ojwt= because:
+
+  1. Seeing how jwt auth is implemented for NGINX lets you customize
+     it as you like.
+  2. It's open source with a permissive MIT License.
+
+The basic idea approach is that you can build a single JavaScript file
+called =ojwt.js= which bundles together all the necessary library and
+encryption code for handling JWTs. This =ojwt.js= file can then be
+included with your NINGX configuration (in the =/conf.d= directory for
+nginx) and referenced in your NGINX conf files. By using the =js_set=
+directive to get a decoded JWT value in NGINX or return a 401 if the
+JWT is not validated.
+
+** Features
+
+The =owjt.js= file produced here provides the following features:
+
+  1. Provide security similar to SSL certificates where a user (either
+     with a browser or API client) can only access your site if they
+     have a valid JWT.
+  2. Provide additional information in the JWT to manage expiration,
+     user tracking, refreshing tokens, etc.
+  3. Have the server instruct clients to put the JWT into a header
+     (via a cookie) so the JWT does not need to be in the URL after
+     the initial authentication.
+
+* Setup
+
+You will need to install a recent version of nodejs (e.g., see [[https://www.rosehosting.com/blog/how-to-install-nodejs-on-ubuntu-22-04/][docs on
+using nvm to get at least v17.9.0]]).
+
+#+BEGIN_SRC sh
+cd /path/to/ojwt
+npm install browserify
+npm install jwt-simple
+npm install --save-dev jest
+#+END_SRC
+
+That should create the usual =node_modules= sub-directory and install
+some useful packages. (We use =browserify= to combine everything into
+a single file which is useful for NGINX and we use =jwt-simple= to
+handle the cryptography for encoding/decoding JWTs. The =jest= package
+is for testing but not needed for deployment.)
+
