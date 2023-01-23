@@ -138,7 +138,8 @@ cd /path/to/nginx/ojwt/
 make private_key.pem  # only need to do this once; or provide your own
 
 node otools.js encode -k private_key.pem \
-  -m "my example msg" -h example.com -exp 2023-04-02
+  -m "my example msg" -h example.com \
+  --exp `date +%s --date=tomorrow`
 # You can replace the above parameters as you like or omit them.
 #+END_SRC
 
