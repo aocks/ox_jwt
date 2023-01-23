@@ -54,7 +54,10 @@ my_keys.js: node_modules public_key.pem test_pub_key.pem
 ## Make production JWT for testing.
 prod_test_jwt.txt:  node_modules private_key.pem my_keys.js
 	node otools encode -k private_key.pem -m "test key" \
-           --host example.com -exp `date --date=tomorrow` -o $@
+           --host example.com \
+           --exp `date +%s --date=tomorrow` \
+           --nbf `date +%s --date=yesterday` \
+           -o $@
 
 test:   ## Run tests (generating required keys and things first if necessary)
 	$(MAKE) run_jest
