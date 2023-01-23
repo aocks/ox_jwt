@@ -122,3 +122,7 @@ server is compromised or non-privileged people have access to the
 =ojwt.js= file you deploy, that is not a problem.
 
 
+
+** What if I have another question?
+
+Please create a [[https://github.com/aocks/ox_jwt/issues/new][new issue on GitHub]].
