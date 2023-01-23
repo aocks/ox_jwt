@@ -39,7 +39,7 @@ at the command line to do the following:
      - This is the only file that you need to put onto your NGINX web
        server. It contains all the encryption/decryption code as well
        as your public key (but not your private key).
-  5. Build and start a simple NGINX docker container using =nginx/Dockerfile=.
+  5. Build and start a simple NGINX docker container using [[nginx/Dockerfile]].
   6. Uses =curl= to verify that you can only access the protected
      location in your NGINX server if you have the appropriate JWT.
 
@@ -54,11 +54,50 @@ at the command line to do the following:
   - but the licensing for NGINX PLUS is expensive
   - and you have more control with =ox_jwt= since you can see and
     modify all of the JWT validation code yourself
+- Using a library in your application server such as:
+  - [[https://pythonhosted.org/Flask-JWT/][Flask-JWT]] or [[https://flask-jwt-extended.readthedocs.io/en/stable/][flask-jwt-extended]] for the [[https://palletsprojects.com/p/flask/][Flask]] python web server
+  - [[https://www.npmjs.com/package/jwt-simple][jwt-simple]] for javascript (used by this project as well)
+  - [[https://pyjwt.readthedocs.io/en/stable/][pyjwt]] for general python JWT tools
+
+** Aren't there some other easy alternatives?
+
+Not that I am aware of. Most other approaches to JWT validation in
+your *APPLICATION* server instead of your *NGINX* server or proxy or
+require a commercial (i.e., non-open-source) server.
+
+** Why do JWT validation in NGINX?
+
+Plenty of applications do JWT validation and decoding themselves. That
+is a fine and useful thing to do and can also be combined with
+validating the JWT in NGINX as well.
+
+A few reasons why you might want to do JWT validation in the web
+server instead of or in addition to the application include:
+
+  1. Reduces load on the application server.
+     - Most external systems will be subject to constant attacks and
+       probes by hackers. Using JWT validation where possible prevents
+       these attacks from even getting to the application server which
+       can be useful.
+  2. Simplify security audits.
+     - Application servers can be complicated which makes reasoning
+       about security in an audit more difficult. By putting a
+       relatively simple JWT validation layer at your NGINX proxy, you
+       can make it easier for your security professionals to audit,
+       maintain, and verify your security.
+     - For example, if you have many different application servers
+       written in different languages with different technology
+       stacks, it can be difficult for security professionals to
+       review and manage all of them. By providing JWT validation in
+       the single entry point (i.e., NGINX) to all your applications,
+       you have a potentially cleaner, more modular system.
+     - Simplify logging. Monitoring JWT validation failures as well as
+       successful access can be simpler if that is done in a single place.
 
 ** How do you setup protection?
 
 See the NGINX configuration file in
-[[./nginx/conf.d/example.conf]]. Basically you do the following in your
+[[nginx/conf.d/example.conf]]. Basically you do the following in your
 NGINX configuration file:
 
   1. Add a line like =js_import conf.d/ojwt.js;= near the top of your
@@ -121,7 +160,21 @@ store any secret information on the NGINX server. You simply store the
 server is compromised or non-privileged people have access to the
 =ojwt.js= file you deploy, that is not a problem.
 
+** Can I see the decoded JWT from NGINX?
 
+The decoded payload will be put into the variable requested. For
+example, if you use a configuration like [[nginx/conf.d/example.conf]],
+you can do the following:
+
+  1. Build and start the example dockerized NGINX server via:
+     - =cd ox_jwt/nginx && run_ojwt_nginx=
+  2. Use curl to check the token and see the response headers via:
+     - =make curl_verbose_token_check=
+  3. The payload of the JWT used (=ojwt/prod_test_jwt.txt= by default)
+     will be shown in the =X-decoded-ojwt= response header in JSON format.
+     
+You can view the decoded JWT payload and use it either in NGINX or in
+your application server.
 
 ** What if I have another question?
 
