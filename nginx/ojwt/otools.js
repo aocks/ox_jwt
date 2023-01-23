@@ -100,7 +100,6 @@ function _do_encode(options, cmd) {
   key = fs.readFileSync(options.key).toString()
   let payload = {
     message: options.message,
-    exp: options.exp,
     host: options.host,
   }
   for(var name in payload) {
@@ -108,8 +107,17 @@ function _do_encode(options, cmd) {
       delete payload[name]
     }
   }
+  let jwtOptions = {}
+  const jwtOptionNames = ["exp", "iat", "nbf"]
+  for (let i=0; i<jwtOptionNames.length; i++) {
+    let optName = jwtOptionNames[i]
+    if (options[optName]) {
+      jwtOptions[optName] = options[optName]
+      payload[optName] = options[optName]
+    }
+  }
   const result = jwt.encode(
-    payload, key, 'RS256'
+    payload, key, 'RS256', jwtOptions
   );
   if (options.output) {
     fs.writeFileSync(options.output, result)
@@ -129,8 +137,10 @@ function _do_decode(options, cmd) {
     },
     headersOut: {
     },
-    log: console.log
+    log: console.log,
+    warn: console.log
   }
+  const auth_tools = require('./auth_tools.js')
   let result = auth_tools.decode_jwt(req)
   console.log(`Result of decoding JWT:\n${result}\n`)
 }
@@ -204,7 +214,8 @@ program.command('encode')
   .requiredOption('-m, --message <value>',
                   'String message value to sign.')
   .option('-h, --host <value>', 'Optional hostname to add to payload.')
-  .option('-e, --exp <value>', 'Expiration time for JWT.')
+  .option('-e, --exp <value>', 'Expiration time for JWT as timestamp in seconds.')
+  .option('-n, --nbf <value>', 'Not before time for JWT as timestamp in seconds.')
   .option('-o, --output <path>', 'Output file to write JWT to.')
   .action((options, cmd) => {
     _do_encode(options, cmd)
