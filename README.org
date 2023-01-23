@@ -171,7 +171,10 @@ you can do the following:
   2. Use curl to check the token and see the response headers via:
      - =make curl_verbose_token_check=
   3. The payload of the JWT used (=ojwt/prod_test_jwt.txt= by default)
-     will be shown in the =X-decoded-ojwt= response header in JSON format.
+     will be shown in the =X-decoded-ojwt= response header in JSON
+     format.
+  4. Stop the docker container via:
+     - =make stop_ojwt_nginx=
      
 You can view the decoded JWT payload and use it either in NGINX or in
 your application server.
