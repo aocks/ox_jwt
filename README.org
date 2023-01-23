@@ -29,7 +29,7 @@ make test
 #+END_SRC
 at the command line to do the following:
 
-  1. Install the npm dependencies listed in =nginx/ojwt/package.json=
+  1. Install the npm dependencies listed in [[nginx/ojwt/package.json]]
      using =npm install= (you will need to have a reasonable version
      of =npm= already installed).
   2. Create private/public/test keys in =nginx/ojwt/*.pem=
