@@ -38,14 +38,14 @@ private_key.pem: ## Make private key using otools.js
 
 ## Make public key from private key via otools.js
 public_key.pem: node_modules private_key.pem
-	node otools.js make_pub_key -o $@ -i $<
+	node otools.js make_pub_key -o $@ -i private_key.pem
 
 test_priv_key.pem:  ## Make test private key using otools.js
 	node otools.js make_priv_key -o $@
 
 ## Make test public key using otools.js
 test_pub_key.pem: node_modules test_priv_key.pem
-	node otools.js make_pub_key -o $@ -i $<
+	node otools.js make_pub_key -o $@ -i test_priv_key.pem
 
 ## Put keys into my_keys.js
 my_keys.js: node_modules public_key.pem test_pub_key.pem
