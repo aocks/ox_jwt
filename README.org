@@ -48,12 +48,77 @@ at the command line to do the following:
 ** What are some alternatives to =ox_jwt=?
 
 - SSL client certificates
-  - but these are difficult and annoying to setup and use and do not
-    provide any additional security
+  - but [[https://security.stackexchange.com/questions/198837/why-is-client-certificate-authentication-not-more-common][SSL client certificates are difficult to setup and maintain]]
+    without providing any additional security beyond JWTs.
 - NGINX PLUS commercial web server [[https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-jwt-authentication/][includes JWT support]]
   - but the licensing for NGINX PLUS is expensive
   - and you have more control with =ox_jwt= since you can see and
     modify all of the JWT validation code yourself
 
+** How do you setup protection?
+
+See the NGINX configuration file in
+[[./nginx/conf.d/example.conf]]. Basically you do the following in your
+NGINX configuration file:
+
+  1. Add a line like =js_import conf.d/ojwt.js;= near the top of your
+     config.
+     - This tells where to find the =ojwt.js= single file javascript
+       bundle which you build via =cd nginx/ojwt && make ojwt.js=.
+     - The =ojwt.js= includes your public key.
+  2. Add a line like =js_set $decoded_ojwt auth_tools.decode_jwt;=
+     near the top of your config.
+     - This tells NGINX to use the =auth_tools.decode_jwt= function
+       from =ojwt.js= to try to decode JWTs from the URL or header or
+       cookie of incoming requests and put the result into the
+       =$decoded_ojwt= NGINX variable.
+  3. Put a block like the following in your NGINX config to return a
+     401 error if the JWT is not valid:
+#+BEGIN_EXAMPLE
+    location /protected {
+      if ($decoded_ojwt ~ "^fail.*") {
+        return 401 $decoded_ojwt;
+      }
+    }
+#+END_EXAMPLE
+
+Once you have the above, all of your protected locations will require
+valid JWTs but users can still access any locations you choose not to
+protect as usual.
+
+** How can I create a JWT for a user?
+   :PROPERTIES:
+   :CUSTOM_ID:       how-can-i-create-a-jwt-for-a-user
+   :END:
+
+You can create JWTs as usual using your private RSA key. As a
+convenience, =ox_jwt= provides a simple command line tool to generate
+JWTs. To access it, simply do something like the following:
+#+BEGIN_SRC sh
+cd /path/to/nginx/ojwt/
+make private_key.pem  # only need to do this once; or provide your own
+
+node otools.js encode -k private_key.pem \
+  -m "my example msg" -h example.com -exp 2023-04-02
+# You can replace the above parameters as you like or omit them.
+#+END_SRC
+
+** How is this secure?
+
+When you want to give someone access to a server or area that you have
+protected, you simply give them a JWT created using your
+=private_key.pem= (keep this file secure!). See the above discussion
+for [[#how-can-i-create-a-jwt-for-a-user][How can I create a JWT for a user]].
+
+The user then provides this JWT in the URL query parameters via
+something like ~?jwt=YOUR_JWT~. NGINX will contain the *PUBLIC* key but
+not the *PRIVATE* key. So when the user attempts to gain access, NGINX
+will verify that the JWT was created by the corresponding private key.
+
+Note that because we use public key cryptography, you do not need to
+store any secret information on the NGINX server. You simply store the
+*PUBLIC* which cannot be used to create new JWTs. Thus if your NGINX
+server is compromised or non-privileged people have access to the
+=ojwt.js= file you deploy, that is not a problem.
 
 
