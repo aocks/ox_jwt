@@ -82,14 +82,15 @@ test_ojwt_nginx:  ## Test building ojwt/ojwt.js and dependancies (TRY THIS FIRST
 	@echo "******************************************************************"
 	@echo " "
 	@echo " "
-	@$(MAKE) test_curl_hello_world
-	@$(MAKE) stop_ojwt_nginx
+	@$(MAKE) --no-print-directory test_curl_hello_world
+	@$(MAKE) --no-print-directory stop_ojwt_nginx
 
 test_curl_hello_world:
 	@echo "***************************************************************"
 	@echo "************    Using curl to GET hello_world.txt    **********"
 	@echo " "
-	@$(eval HW_TEST=$(shell $(MAKE) curl_hello_world 2> /dev/null))
+	@$(eval HW_TEST=$(shell $(MAKE) --no-print-directory \
+               curl_hello_world 2> /dev/null))
 	@echo $(HW_TEST)
 	@echo " "
 	@echo "*** You should see the message 'Hello world.' if it worked. ***"
