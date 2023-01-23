@@ -52,13 +52,23 @@ run_ojwt_nginx:  ## Build and run nginx docker image in container
 	docker run --rm --name ojwt_nginx_1 -p ${NGINX_PORT}:80 \
           ${D_RUN_FLAGS} ojwt_nginx
 
+interactive_run_ojwt_nginx:  ## Build/run nginx docker container interactively
+	$(MAKE) do_build_ojwt_nginx D_RUN_FLAGS="-it"
+	@echo "Using NGINX_PORT=${NGINX_PORT}"
+	docker run --rm --name ojwt_nginx_1 -p ${NGINX_PORT}:80 \
+          ${D_RUN_FLAGS} ojwt_nginx
+
 stop_ojwt_nginx:  ## Stop docker container
 	@echo "Stopping container"
 	docker stop ojwt_nginx_1
 
+
+curl_hello_world:
+	@curl -H Host:example.com "localhost:${NGINX_PORT}/protected/hello_world.txt?jwt=`cat ojwt/prod_test_jwt.txt`"
+
 test_ojwt_nginx:  ## Test building ojwt/ojwt.js and dependancies (TRY THIS FIRST)
 	@if [ ! -z "`docker ps -a -q -f name=ojwt_nginx_1`" ] ; then \
-		@$(MAKE) stop_ojwt_nginx ;  \
+		$(MAKE) stop_ojwt_nginx ;  \
         fi
 	@$(MAKE) run_ojwt_nginx
 	@echo "Sleep 2 seconds to wait for container to start."
@@ -72,14 +82,21 @@ test_ojwt_nginx:  ## Test building ojwt/ojwt.js and dependancies (TRY THIS FIRST
 	@echo "******************************************************************"
 	@echo " "
 	@echo " "
-	@echo "******************************************************************"
-	@echo "************    Using curl to GET hello_world.txt    *************"
-	@echo " "
-	curl -H Host:example.com "localhost:${NGINX_PORT}/protected/hello_world.txt?jwt=`cat ojwt/prod_test_jwt.txt`"
-	@echo " "
-	@echo "*** You should see the message 'Hello world.' if it worked.    ***"
-	@echo "******************************************************************"
+	@$(MAKE) test_curl_hello_world
 	@$(MAKE) stop_ojwt_nginx
+
+test_curl_hello_world:
+	@echo "***************************************************************"
+	@echo "************    Using curl to GET hello_world.txt    **********"
+	@echo " "
+	@$(eval HW_TEST=$(shell $(MAKE) curl_hello_world 2> /dev/null))
+	@echo $(HW_TEST)
+	@echo " "
+	@echo "*** You should see the message 'Hello world.' if it worked. ***"
+	@echo "***************************************************************"
+	@if [ "Hello world." != "${HW_TEST}" ] ; then \
+		echo "Seems like test failed since HW_TEST=${HW_TEST}" ; fi
+
 
 exec_nginx:  ## Use docker exec to get a shell on the nginx container
 	docker exec -it ojwt_nginx_1 /bin/bash
