@@ -7,3 +7,5 @@ node_modules
 *.key
 *.pem
 
+# Do not check my_keys.js into git since we auto-generate it.
+my_keys.js
