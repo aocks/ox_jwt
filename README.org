@@ -4,3 +4,56 @@
 The =ox_jwt= repository provides some simple tools for working with JSON Web
 Tokens (JWTs).
 
+For example, the =nginx= sub-directory contains a fully working
+minimal example of how you can setup NGINX to only allow access to
+your locations if the client has a JWT in the URL, header, or browser
+cookie.
+
+This is useful because:
+
+  1. You can easily protect access to your internal or external servers.
+     - For example, requiring a JWT will block hackers trying to brute
+       force username/password combinations.
+     - Checking the JWT in NGINX prevents hackers from exploiting
+       vulnerabilities in your application server.
+  2. Since NGINX is a widely used open source web server, this
+     approach to security is easy to integrate with most systems.
+  3. All of the encryption/decryption used is open source, verifiable,
+     and modifiable by you.
+
+* Quickstart and Demo
+
+For a simple test of the system, you can do something like
+#+BEGIN_SRC sh
+make test
+#+END_SRC
+at the command line to do the following:
+
+  1. Install the npm dependencies listed in =nginx/ojwt/package.json=
+     using =npm install= (you will need to have a reasonable version
+     of =npm= already installed).
+  2. Create private/public/test keys in =nginx/ojwt/*.pem=
+  3. Use the keys to create a test JWT in =ojwt/prod_test_jwt.txt=.
+     - This JWT is keyed to the host =example.com=.
+  4. Build the single file javascript bundle in =nginx/ojwt/ojwt.js=.
+     - This is the only file that you need to put onto your NGINX web
+       server. It contains all the encryption/decryption code as well
+       as your public key (but not your private key).
+  5. Build and start a simple NGINX docker container using =nginx/Dockerfile=.
+  6. Uses =curl= to verify that you can only access the protected
+     location in your NGINX server if you have the appropriate JWT.
+
+* FAQ
+
+** What are some alternatives to =ox_jwt=?
+
+- SSL client certificates
+  - but these are difficult and annoying to setup and use and do not
+    provide any additional security
+- NGINX PLUS commercial web server [[https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-jwt-authentication/][includes JWT support]]
+  - but the licensing for NGINX PLUS is expensive
+  - and you have more control with =ox_jwt= since you can see and
+    modify all of the JWT validation code yourself
+
+
+
