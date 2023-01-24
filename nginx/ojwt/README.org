@@ -34,9 +34,10 @@ The =owjt.js= file produced here provides the following features:
 
 * Quickstart
 
-The following shows you how to quickly start using ox_jwt:
-
-FIXME
+The quickest way to get started is to read the "Quickstart and Demo"
+section in the top-level README. This file is intended more for people
+interested in details of how to build and modify the javascript
+packages and related tools.
 
 * Setup
 
@@ -44,15 +45,21 @@ You will need to install a recent version of nodejs (e.g., see [[https://www.ros
 using nvm to get at least v17.9.0]]).
 
 #+BEGIN_SRC sh
-cd /path/to/ojwt
-npm install browserify
-npm install jwt-simple
-npm install --save-dev jest
+cd /path/to/ox_jwt/nginx/ojwt
+npm install
+make ojwt.js
 #+END_SRC
 
-That should create the usual =node_modules= sub-directory and install
-some useful packages. (We use =browserify= to combine everything into
-a single file which is useful for NGINX and we use =jwt-simple= to
-handle the cryptography for encoding/decoding JWTs. The =jest= package
-is for testing but not needed for deployment.)
+That should create the usual =node_modules= sub-directory, install
+some useful packages, create required keys and produce the =ojwt.js=
+single file JavaScript package to use on your NGINX server. (We use
+=browserify= to combine everything into a single file which is useful
+for NGINX and we use =jwt-simple= to handle the cryptography for
+encoding/decoding JWTs. You can then put =ojwt.js= into your NGINX
+configuration and use it with =js_import= and =js_set=.
+
+If you want to edit some of the JavaScript packages in this directory,
+you can also do =make test= to run the automated tests using the
+=jest= test framework (=jest= is for testing but not
+needed for deployment).
 
