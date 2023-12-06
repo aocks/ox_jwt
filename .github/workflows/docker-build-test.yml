@@ -1,0 +1,15 @@
+
+
+name: Docker build and test
+
+on:
+  pull_request:
+
+jobs:
+  build_and_test:
+   runs-on: ubuntu-latest
+  
+   steps:
+     - uses: actions/checkout@v2
+     - name: Run test via makefile
+       run: make test
