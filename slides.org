@@ -15,11 +15,25 @@
 #+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
 #+REVEAL_PLUGINS: (notes)
 #+REVEAL_THEME: solarized
+#+REVEAL_INIT_OPTIONS: fragments:true, transition:'fade'
+
 
 #+COMMENT: Use `s` to engage speaker mode
 
 #+TITLE: Tips, Tricks, and Reasons for JSON Web Tokens (JWTs)
 #+AUTHOR: Emin Martinian
+
+* Code Fragment Example :noexport:
+
+#+BEGIN_SRC python
+print("This appears immediately")
+#+END_SRC
+
+#+ATTR_REVEAL: :frag appear
+#+BEGIN_SRC python
+print("This appears after clicking")
+#+END_SRC
+
 
 * JWT: JSON Web Token
 
@@ -35,38 +49,115 @@ Used for authentication/authorization such as:
 - standard: [[https://datatracker.ietf.org/doc/html/rfc7519][RFC 7519]]
 #+END_NOTES
 
-* What do JWTs look like?
-
-Base64 encoded header.payload.signature:
-
-#+BEGIN_EXAMPLE
-HEADER:     { "alg": "HS256", "typ": "JWT" }
-#+END_EXAMPLE
-
-
-#+BEGIN_EXAMPLE
-PAYLOAD:    {"sub": "a", "name": "arbitrary data", "iat": 1 }
-#+END_EXAMPLE
-
-#+BEGIN_EXAMPLE
-SIGNATURE:  (depends on signing algorithm)
-#+END_EXAMPLE
-
-Signed using HS256 with secret=123:
-#+BEGIN_EXAMPLE
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
-  .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
-  .k4P2aZc9d0yYjaEXlHwl0e1PhNtmN1gLD9gtZvA59f4
-#+END_EXAMPLE
+* Why JWTs?
 
 #+BEGIN_NOTES
-- Use https://jwt.io/#debugger-io to verify/validate/decode
+- Auth server manages passwords, takes credit cards, etc.
+- Must be secure and in sync; hard to load balance
+- Cannot let just any employee have access
 #+END_NOTES
 
-* alt
+Separate authentication from validation/application:
+- Authentication requires secret keys (high security)
+- Validation can use public key (less security)
+- Easier to manage secrets, keys, load, sync, etc.
 
-#+name: jwt-auth-vs-app
-#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/alt-jwt-process.jpg
+#+name: jwt-auth-vs-app-start
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-start.jpg
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho, style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth\nor credit card)", constraint=false, splines=ortho, style=invis];
+    Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho,style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app-start
+[[file:images/jwt-auth-vs-app-start.jpg]]
+
+
+* JWT: Authentication Request
+
+#+BEGIN_NOTES
+Managing the authentication server is more complicated.
+- Can't allow just anyone to access/maintain/deploy (has secrets)
+- Must maintain state (e.g., current user password) so hard to load balance
+#+END_NOTES
+
+
+Client authenticates to server:
+
+#+ATTR_REVEAL: :frag (appear appear)
+- login with username/password/MFA
+- may require database check, locks, other slow ops
+- auth server must be secure
+
+
+#+name: jwt-auth-vs-app-auth
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth.jpg
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho, style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth or\ncredit card)", constraint=false, splines=ortho];
+    Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho,style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app-auth
+[[file:images/jwt-auth-vs-app-auth.jpg]]
+
+
+* JWT: Authentication Response
+
+Server responds with JWT:
+
+#+ATTR_REVEAL: :frag (appear appear)
+- header describing JWT
+- claims describing information/rights
+- signature from Auth Server
+
+#+name: jwt-auth-vs-app-auth-response
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth-response.jpg
 
 digraph auth_system {
     // Define subgraphs
@@ -84,8 +175,8 @@ digraph auth_system {
 
     // Define connections
     AuthServer -> Client [label="JWT", constraint=false, splines=ortho];
-    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho];
-    Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
+    Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho,style=invis];
 
     // Define hidden edges to force layout
     AuthServer -> hidden [style=invis];
@@ -95,51 +186,142 @@ digraph auth_system {
 
 #+end_src
 
-#+RESULTS: jwt-auth-vs-app
-[[file:images/alt-jwt-process.jpg]]
+#+RESULTS: jwt-auth-vs-app-auth-response
+[[file:images/jwt-auth-vs-app-auth-response.jpg]]
 
-* fixme
 
-#+name: jwt-process
-#+begin_src dot :cmdline -Kdot -Tpng :exports results :file images/jwt-process.png
+* JWT: Application Request
 
-digraph jwt_process {
-    node[shape=box, style=filled];
+#+BEGIN_NOTES
+- Distributed Trust
+- App Server can be load balanced or serverless
+- App Server can be maintained with lower security requirements
+#+END_NOTES
 
-    client[label="Client"];
-    auth_server[label="Auth Server (Token Issuer)"];
-    jwt_structure[label="JWT Structure"];
-    resource_server[label="Resource Server (Token Verifier)"];
-    authentication_result[label="Authentication Result"];
-    client_access[label="Client Access"];
 
-    client -> auth_server[label="Request Token"];
-    auth_server -> jwt_structure[label="Generate JWT"];
-    jwt_structure -> client[label="Return JWT to Client"];
+Client sends JWT to App Server:
 
-    client -> resource_server[label="Send JWT with Request"];
-    resource_server -> authentication_result[label="Verify JWT"];
-    authentication_result -> client_access[label="Grant/Deny Access"];
+#+ATTR_REVEAL: :frag (appear appear)
+- App Server validates JWT with public key
+- No DB/state/sync/update; can be serverless
+- Checks JWT for rights + provides service
 
-    {rank=same; client; auth_server;}
-    {rank=same; resource_server; authentication_result;}
-    {rank=same; client_access;}
+
+
+
+#+name: jwt-auth-vs-app-request-app
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-request-app.jpg
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho,style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
+    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
 }
+
 #+end_src
 
-#+RESULTS: jwt-process
-[[file:images/jwt-process.png]]
+#+RESULTS: jwt-auth-vs-app-request-app
+[[file:images/jwt-auth-vs-app-request-app.jpg]]
 
-* Why JWTs?
 
-Separate checking identity from performing service:
 
-- Authentication server can check identity
-  - verify username+password/MFA/etc + issue JWT
-  - may require database check, locks, or other slow operations
 
-- App servers can just check JWT is valid + check roles in payload
-  - don't need DB or even hashed passwords (use asymmetric encryption)
-  - don't need state (e.g., horizontal scaling via load balancing)
-  - can be serverless
-  - don't need to be updated when password DB changes
+
+* Separate Auth From Validation
+
+Auth Server has **secrets**; needs **security** + maintenance
+
+#+ATTR_REVEAL: :frag (appear appear)
+- App Server needs public keys; low security
+- Easy to deploy App Server(s); e.g., serverless
+- Lower security for App Server, logs, debug, etc.
+
+#+name: jwt-auth-vs-app-separate
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-separate.jpg
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho,style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
+    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho, style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app-separate
+[[file:images/jwt-auth-vs-app-separate.jpg]]
+
+
+
+
+
+
+* What do JWTs look like?
+
+Base64 encoded header.payload.signature:
+
+#+ATTR_REVEAL: :frag appear
+#+BEGIN_EXAMPLE
+HEADER:     { "alg": "HS256", "typ": "JWT" }
+#+END_EXAMPLE
+
+#+ATTR_REVEAL: :frag appear
+#+BEGIN_EXAMPLE
+PAYLOAD:    {"sub": "a", "name": "arbitrary data", "iat": 1 }
+#+END_EXAMPLE
+
+#+ATTR_REVEAL: :frag appear
+#+BEGIN_EXAMPLE
+SIGNATURE:  (depends on signing algorithm)
+#+END_EXAMPLE
+
+Signed using HS256 with secret=123:
+#+BEGIN_EXAMPLE
+   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+  .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
+  .k4P2aZc9d0yYjaEXlHwl0e1PhNtmN1gLD9gtZvA59f4
+#+END_EXAMPLE
+
+#+BEGIN_NOTES
+- Use https://jwt.io/#debugger-io to verify/validate/decode
+#+END_NOTES
+
+
+
