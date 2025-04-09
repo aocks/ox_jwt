@@ -326,5 +326,110 @@ SIGNATURE:  (depends on signing algorithm)
 - Use https://jwt.io/#debugger-io to verify/validate/decode
 #+END_NOTES
 
+* Python/Flask Example
+
+Easy to verify/decode using libraries (e.g., =pyjwt=) and compose
+checks using decorators:
+
+#+BEGIN_SRC python
+@app.route('/support/urgent')
+@requires_jwt                  # validates JWT
+@jwt_claims(['premium_user'])  # ensures token is for premium user
+@jwt_iat(datetime.timedelta(hours=24))  # ensure recent token
+def support_urgent():
+    ... # process ending support request
+#+END_SRC
+
+* Example of =@requires_jwt=
+
+#+BEGIN_SRC python
+def requires_jwt(func):
+    @wraps(func)
+    def decorated(*args, **kwargs):        
+        token = request.headers.get("Authorization").split(" ")[1]
+        if not token:
+            return 'missing token', 401  # if no token return error   
+        try:
+            g.decoded_jwt = jwt.decode(token, algorithms=['ES256'],
+                                       key=current_app.config['J_KEY'])
+            check_nbf_and_exp()  # ensure active and not expired
+            return func(*args, **kwargs)
+        except Exception as problem:
+            return f'{problem=}', 401 # return 401 or other error code
+    return decorated
+#+END_SRC
+
+* Example of =@jwt_claims=
+
+#+COMMENT: should we include or skip if tight on time?
+#+COMMENT: or maybe have as backup slide
+
+#+BEGIN_SRC python
+def jwt_claims(claims_list):
+    def make_decorator(func):
+        @wraps(func)
+        def decorated(*args, **kwargs):        
+            missing = [c for c in claims_list if not g.decoded_jwt.get(c)]
+            if missing:
+                return f'Missing claims: {missing}', 401
+            return func(*args, **kwargs)
+        return decorated
+    return make_decorator
+#+END_SRC
+
+* Separate validation from parsing
+
+Can use middleware to verify signature
+
+- slow/expensive for public keys or even secure symmetric keys
+- e.g., NGINX can verify before passing to app server
+
+* Traps, Vulnerabilities, and Anti-Patterns
+
+#+ATTR_REVEAL: :frag (appear appear appear)
+- Beware of using header fields in checking signature
+  - don't trust =alg= field or limit possibilities
+  - be careful with =kid=, =jku=, =jwk=, etc.
+- Don't simulate sessions with JWTs
+- Token revocation issue: access/refresh tokens
+
+
+* Revocation via Access/Refresh Tokens
+
+After initial credential check (e.g., username/password or API
+key/secret), Auth server provides:
+
+- "refresh token" with long expiry
+  - can be used to get access token without credential check
+- "access token" with short expiry
+  - can be used to access services
+
+On security events (role changes, credential changes, hacks), auth
+server will invalidate refresh token + require new credential check.
+
+* Summary and next steps
+
+#+BEGIN_NOTES
+If you are writing a small application, you can quickly and easily put
+together a secure system using various JWT libraries.
+
+If you are doing a full enterprise authentication system, you may want
+to go with an existing platform. Many of those use JWTs under the hood
+so it's still useful to have a high level understanding of the basic diea.
+#+END_NOTES
+
+#+ATTR_REVEAL: :frag (none none none appear appear)
+- Distributed trust can enable many use cases
+- JWTs = secure, efficient, standardized auth tool
+- Python decorators = nice way to validate claims
+- Libraries:
+  - [[https://pyjwt.readthedocs.io/en/stable/][pyjwt]], [[https://flask-jwt-extended.readthedocs.io/en/stable/][flask-jwt-extended]], [[https://django-rest-framework-simplejwt.readthedocs.io/en/latest/][djangorestframework-simplejwt]]
+- Platforms:
+  - [[https://auth0.com][auth0]], [[https://supertokens.com/][supertokens]], [[https://aws.amazon.com/cognito/][cognito]], [[https://www.keycloak.org/][keycloak]]
+
+
+
+
+
 
 
