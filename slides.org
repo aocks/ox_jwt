@@ -1,0 +1,145 @@
+
+#+BEGIN_SRC emacs-lisp :exports none
+(require 'ox-reveal)
+
+;; Make sure to use version 4.0 and set REVEAL_REVEAL_JS_VERSION below
+(setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/")
+(setq org-reveal-plugins '(notes))
+#+END_SRC
+
+#+COMMENT: using timestamp:nil suppresses "created at" in title
+#+COMMENT: using num:nil prevents slide titles being numbered
+#+OPTIONS: timestamp:nil num:nil
+
+#+REVEAL_REVEAL_JS_VERSION: 4
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
+#+REVEAL_PLUGINS: (notes)
+#+REVEAL_THEME: solarized
+
+#+COMMENT: Use `s` to engage speaker mode
+
+#+TITLE: Tips, Tricks, and Reasons for JSON Web Tokens (JWTs)
+#+AUTHOR: Emin Martinian
+
+* JWT: JSON Web Token
+
+Used for authentication/authorization such as:
+
+- front-end client to access back-end or API server
+- compact, [[https://datatracker.ietf.org/doc/html/rfc7519][standardized]], secured, customizable
+- "state-less" alternative to cookies/sessions
+- scalable, performant, distributed trust
+
+
+#+BEGIN_NOTES
+- standard: [[https://datatracker.ietf.org/doc/html/rfc7519][RFC 7519]]
+#+END_NOTES
+
+* What do JWTs look like?
+
+Base64 encoded header.payload.signature:
+
+#+BEGIN_EXAMPLE
+HEADER:     { "alg": "HS256", "typ": "JWT" }
+#+END_EXAMPLE
+
+
+#+BEGIN_EXAMPLE
+PAYLOAD:    {"sub": "a", "name": "arbitrary data", "iat": 1 }
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+SIGNATURE:  (depends on signing algorithm)
+#+END_EXAMPLE
+
+Signed using HS256 with secret=123:
+#+BEGIN_EXAMPLE
+   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+  .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
+  .k4P2aZc9d0yYjaEXlHwl0e1PhNtmN1gLD9gtZvA59f4
+#+END_EXAMPLE
+
+#+BEGIN_NOTES
+- Use https://jwt.io/#debugger-io to verify/validate/decode
+#+END_NOTES
+
+* alt
+
+#+name: jwt-auth-vs-app
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/alt-jwt-process.jpg
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho];
+    Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app
+[[file:images/alt-jwt-process.jpg]]
+
+* fixme
+
+#+name: jwt-process
+#+begin_src dot :cmdline -Kdot -Tpng :exports results :file images/jwt-process.png
+
+digraph jwt_process {
+    node[shape=box, style=filled];
+
+    client[label="Client"];
+    auth_server[label="Auth Server (Token Issuer)"];
+    jwt_structure[label="JWT Structure"];
+    resource_server[label="Resource Server (Token Verifier)"];
+    authentication_result[label="Authentication Result"];
+    client_access[label="Client Access"];
+
+    client -> auth_server[label="Request Token"];
+    auth_server -> jwt_structure[label="Generate JWT"];
+    jwt_structure -> client[label="Return JWT to Client"];
+
+    client -> resource_server[label="Send JWT with Request"];
+    resource_server -> authentication_result[label="Verify JWT"];
+    authentication_result -> client_access[label="Grant/Deny Access"];
+
+    {rank=same; client; auth_server;}
+    {rank=same; resource_server; authentication_result;}
+    {rank=same; client_access;}
+}
+#+end_src
+
+#+RESULTS: jwt-process
+[[file:images/jwt-process.png]]
+
+* Why JWTs?
+
+Separate checking identity from performing service:
+
+- Authentication server can check identity
+  - verify username+password/MFA/etc + issue JWT
+  - may require database check, locks, or other slow operations
+
+- App servers can just check JWT is valid + check roles in payload
+  - don't need DB or even hashed passwords (use asymmetric encryption)
+  - don't need state (e.g., horizontal scaling via load balancing)
+  - can be serverless
+  - don't need to be updated when password DB changes
