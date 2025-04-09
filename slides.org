@@ -297,27 +297,30 @@ digraph auth_system {
 
 Base64 encoded header.payload.signature:
 
-#+ATTR_REVEAL: :frag appear
-#+BEGIN_EXAMPLE
+#+ATTR_REVEAL: :frag appear :frag_idx 1
+#+BEGIN_src shell
 HEADER:     { "alg": "HS256", "typ": "JWT" }
-#+END_EXAMPLE
+#+END_src
 
-#+ATTR_REVEAL: :frag appear
-#+BEGIN_EXAMPLE
+#+ATTR_REVEAL: :frag appear :frag_idx 2
+#+BEGIN_src shell
 PAYLOAD:    {"sub": "a", "name": "arbitrary data", "iat": 1 }
-#+END_EXAMPLE
+#+END_src
 
-#+ATTR_REVEAL: :frag appear
-#+BEGIN_EXAMPLE
+#+ATTR_REVEAL: :frag appear :frag_idx 3
+#+BEGIN_src shell
 SIGNATURE:  (depends on signing algorithm)
-#+END_EXAMPLE
+#+END_src
 
-Signed using HS256 with secret=123:
-#+BEGIN_EXAMPLE
+#+ATTR_REVEAL: :frag appear :frag_idx 4
+- Signed using HS256 with secret=123:
+
+#+ATTR_REVEAL: :frag appear :frag_idx 4
+#+BEGIN_src shell
    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
   .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
   .k4P2aZc9d0yYjaEXlHwl0e1PhNtmN1gLD9gtZvA59f4
-#+END_EXAMPLE
+#+END_src
 
 #+BEGIN_NOTES
 - Use https://jwt.io/#debugger-io to verify/validate/decode
