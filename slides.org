@@ -334,7 +334,7 @@ checks using decorators:
 #+BEGIN_SRC python
 @app.route('/support/urgent')
 @requires_jwt                  # validates JWT
-@jwt_claims(['premium_user'])  # ensures token is for premium user
+@jwt_claims(['paid_support'])  # ensures token is for premium user
 @jwt_iat(datetime.timedelta(hours=24))  # ensure recent token
 def support_urgent():
     ... # process ending support request
@@ -369,7 +369,8 @@ def jwt_claims(claims_list):
     def make_decorator(func):
         @wraps(func)
         def decorated(*args, **kwargs):        
-            missing = [c for c in claims_list if not g.decoded_jwt.get(c)]
+            missing = [c for c in claims_list
+                       if not g.decoded_jwt.get(c)]
             if missing:
                 return f'Missing claims: {missing}', 401
             return func(*args, **kwargs)
@@ -379,15 +380,23 @@ def jwt_claims(claims_list):
 
 * Separate validation from parsing
 
-Can use middleware to verify signature
+#+BEGIN_NOTES
+We can go one step beyond separating authentication from validation
+and separate validation from parsing.
 
-- slow/expensive for public keys or even secure symmetric keys
+- aside: NGINX+JWTs can protect stand-alone sites
+#+END_NOTES
+
+- Validation can be slow for some keys
+- Can use middleware to verify signature
 - e.g., NGINX can verify before passing to app server
+
+#+COMMENT: FIXME: consider diagram of NGINX idea
 
 * Traps, Vulnerabilities, and Anti-Patterns
 
 #+ATTR_REVEAL: :frag (appear appear appear)
-- Beware of using header fields in checking signature
+- Beware using header fields to check signature
   - don't trust =alg= field or limit possibilities
   - be careful with =kid=, =jku=, =jwk=, etc.
 - Don't simulate sessions with JWTs
@@ -395,6 +404,12 @@ Can use middleware to verify signature
 
 
 * Revocation via Access/Refresh Tokens
+  :PROPERTIES:
+  :ID:       b06374ea-7534-4153-b5e6-8e2aa62a24c5
+  :END:
+
+#+COMMENT: FIXME: need more work here
+#+COMMENT: FIXME: might want diagram here
 
 After initial credential check (e.g., username/password or API
 key/secret), Auth server provides:
