@@ -1,11 +1,4 @@
 
-#+BEGIN_SRC emacs-lisp :exports none
-(require 'ox-reveal)
-
-;; Make sure to use version 4.0 and set REVEAL_REVEAL_JS_VERSION below
-(setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/")
-(setq org-reveal-plugins '(notes))
-#+END_SRC
 
 #+COMMENT: using timestamp:nil suppresses "created at" in title
 #+COMMENT: using num:nil prevents slide titles being numbered
@@ -22,6 +15,19 @@
 
 #+TITLE: Tips, Tricks, and Reasons for JSON Web Tokens (JWTs)
 #+AUTHOR: Emin Martinian
+
+
+* Basic Setup :noexport:
+
+#+BEGIN_SRC emacs-lisp :exports none
+(require 'ox-reveal)
+
+;; Make sure to use version 4.0 and set REVEAL_REVEAL_JS_VERSION below
+(setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/")
+(setq org-reveal-plugins '(notes))
+(setq org-export-babel-evaluate 't)
+#+END_SRC
+
 
 * Code Fragment Example :noexport:
 
@@ -73,7 +79,7 @@ Separate authentication from validation/application:
 - Easier to manage secrets, keys, load, sync, etc.
 
 #+name: jwt-auth-vs-app-start
-#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-start.jpg
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-start.jpg :eval never-export
 
 digraph auth_system {
     // Define subgraphs
@@ -125,7 +131,7 @@ Client authenticates to server:
 
 
 #+name: jwt-auth-vs-app-auth
-#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth.jpg
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth.jpg :eval never-export
 
 digraph auth_system {
     // Define subgraphs
@@ -168,7 +174,7 @@ Server responds with JWT:
 - signature from Auth Server
 
 #+name: jwt-auth-vs-app-auth-response
-#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth-response.jpg
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth-response.jpg :eval never-export
 
 digraph auth_system {
     // Define subgraphs
@@ -221,7 +227,7 @@ Client sends JWT to App Server:
 
 
 #+name: jwt-auth-vs-app-request-app
-#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-request-app.jpg
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-request-app.jpg :eval never-export
 
 digraph auth_system {
     // Define subgraphs
@@ -267,7 +273,7 @@ Auth Server has **secrets**; needs **security** + maintenance
 - Lower security for App Server, logs, debug, etc.
 
 #+name: jwt-auth-vs-app-separate
-#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-separate.jpg
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-separate.jpg :eval never-export
 
 digraph auth_system {
     // Define subgraphs
@@ -320,26 +326,26 @@ PAYLOAD:    {"sub": "a", "name": "arbitrary data", "iat": 1 }
 
 #+ATTR_REVEAL: :frag appear :frag_idx 3
 #+BEGIN_src shell
-SIGNATURE:  aIBLdQuQ8z4F50Z4fsBRX21WZR7DUqTWa9GXDAN6-M3
-            fsF56vwO9XviIeTz-n-0IcDRqM3nej83ueixpIvGs0g
+SIGNATURE:  SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-L
+            L5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
+            
 #+END_src
 
 #+ATTR_REVEAL: :frag appear :frag_idx 4
 #+BEGIN_src shell
-ENCODED JWT:  eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9
-              .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
-              .aIBLdQuQ8z4F50Z4fsBRX21WZR7DUqTWa9GXDAN6-M3
-               fsF56vwO9XviIeTz-n-0IcDRqM3nej83ueixpIvGs0g
+ENCODED JWT:   eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9
+               .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
+               .SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-L
+                L5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
 #+END_src
 
 
 #+ATTR_REVEAL: :frag appear :frag_idx 5
-Signed using HS256 with secret:
-#+REVEAL_HTML: <div style="font-size: 75%;">
+Signed using EdDSA with secret key:
+
 #+ATTR_REVEAL: :frag appear :frag_idx 5
 #+BEGIN_src python
-  MHcCAQEEIOiPNn3IQok5k/pPLHSKW1G2rPkZCkED9RWA54oYS5L1oAoGCCqGSM49AwEHoUQDQgAEtuhKtU
-  Cz4bc79LV3sfVHNQ++ALIixWwbhAjnkRMp/MRpcHv97AtJIaSJW75/tC9PQEkPwVkurMP3O+eQhJ5Elw==
+MC4CAQAwBQYDK2VwBCIEIC+D6rD2YbXtV0ccR3smoR0ynhVuyyqvplFLbQWDdAtn
 #+END_src
 
 
@@ -349,91 +355,86 @@ Signed using HS256 with secret:
   - indicate username, roles, rights, restrictions, payments
 #+END_NOTES
 
-** Example Key Details
+** Secret Key
 
-PUBLIC KEY:
-#+BEGIN_SRC python :session jwt_example :exports code :python ~/code/ox_jwt/venv_ox_jwt/bin/python3
-public_key = '''
------BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJ4Au4Cb+KMMqarLlsBcv1+U4gBkv
-gYu4S/SidhgeZtIVBo3z8ltvlz/QNTFoZJ70bQMu39EQY10ZW20448Mq/w==
------END PUBLIC KEY-----
-'''
-#+END_SRC
-
-
-SECRET KEY:
-#+BEGIN_SRC python :session jwt_example :exports code
-secret_key = '''
------BEGIN EC PRIVATE KEY-----
-MHcCAQEEIHdYJrZXnSG7PA6f61OaPJJ7st8zNhVTCd6mnryb+ZqgoAoGCCqGSM49
-AwEHoUQDQgAEJ4Au4Cb+KMMqarLlsBcv1+U4gBkvgYu4S/SidhgeZtIVBo3z8ltv
-lz/QNTFoZJ70bQMu39EQY10ZW20448Mq/w==
------END EC PRIVATE KEY-----
-'''
-#+END_SRC
-
-
-** Loading Keys
-
-#+BEGIN_SRC python :session jwt_example :exports code
-import base64
-import jwt  #  pip install 'pyjwt[crypto]'
-from cryptography.hazmat.backends import default_backend
+#+BEGIN_SRC python :session jwt_example :exports code :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+import base64, jwt  #  pip install 'pyjwt[crypto]'
+from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 
-der_secret_key = ''.join(secret_key.split('\n')[2:-2])
-sk = serialization.load_der_private_key(
-    base64.b64decode(der_secret_key),
-    backend=default_backend(), password=None)
+secret_key = base64.b64encode(  # How to generate new key
+    ed25519.Ed25519PrivateKey.generate().private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption())
+).decode('utf8')
 
-der_public_key = ''.join(public_key.split('\n')[2:-2])
-pk = serialization.load_der_public_key(
-    base64.b64decode(der_public_key), backend=default_backend())
-
-
+secret_key = (  # We hard code secret key so you can verify results
+    'MC4CAQAwBQYDK2VwBCIEIC+D6rD2YbXtV0ccR3smoR0ynhVuyyqvplFLbQWDdAtn'
+)
 #+END_SRC
 
 #+RESULTS:
 
+** Public Key
+
+#+name: get-public-key
+#+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
+sk = serialization.load_der_private_key(  # de-serialize encoded key
+    base64.b64decode(secret_key),backend=default_backend(),
+    password=None)
+
+pk = sk.public_key()
+public_key = pk.public_bytes(  # serialize
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo
+).decode('utf8')
+                
+print(public_key)
+#+END_SRC
+
+
+#+RESULTS: get-public-key
+: -----BEGIN PUBLIC KEY-----
+: MCowBQYDK2VwAyEAUVLjZWAVK5ZE1ewI5QBdr0Nig1Qkx3kl5zHIADvw0M8=
+: -----END PUBLIC KEY-----
+
+
+
 ** Encoding Example JWT
 
 #+NAME: encoded-jwt
-#+BEGIN_SRC python :session jwt_example :exports both :results output
-import textwrap
+#+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
+import textwrap  # just for display
 
 example_jwt = jwt.encode(
-    headers={'typ':'JWT', 'alg':'ES256'},
+    headers={'typ':'JWT', 'alg':'EdDSA'},
     payload={'sub': 'a', 'name': 'b', 'iat': 1},
-    key=sk)
-print(textwrap.fill('\n.'.join(example_jwt.split('.')),
-      width=46, replace_whitespace=False))
+    key=sk)  # this is the JWT that would be used
+print(textwrap.indent(textwrap.fill(       # format for
+      '\n.'.join(example_jwt.split('.')),  # nice display
+     width=44, replace_whitespace=False), prefix='  '))
 #+END_SRC
 
+Encoded JWT:
 #+RESULTS: encoded-jwt
-: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9
-: .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
-: .TPrm2ijE9Rr0boAs2n5ltEMWQY0i5AKsJ-Ew_qb4Yb4Jf
-: EKKKRgKnFoXep2AMyVNlJP4sDf1vvkuDq1Bm5-Ukg
-
-
+:   eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9
+:   .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
+:   .SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-
+:   LL5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
 
 ** Decoding Example JWT
 
 #+NAME: decoded-jwt
-#+BEGIN_SRC python :session jwt_example :exports both :results output
-decoded_jwt = jwt.decode(example_jwt, algorithms=['ES256'], key=pk)
+#+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
+decoded_jwt = jwt.decode(example_jwt, algorithms=['EdDSA'], key=pk)
 print(decoded_jwt)
 #+END_SRC
 
+Decoded Payload from JWT:
 #+RESULTS: decoded-jwt
 : {'sub': 'a', 'name': 'b', 'iat': 1}
-
-
-
-
-
-
 
 
 * Python/Flask Example
