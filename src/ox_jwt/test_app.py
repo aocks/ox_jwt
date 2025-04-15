@@ -120,3 +120,13 @@ def test_premium_enc_dec():
         headers={'Authorization': f'Bearer {my_jwt}'})
     assert req.status_code == 200
     assert req.text == 'processing support request for user user@example.com'
+
+
+def main():
+    print(f'\n\n   Running tests in {__file__}   \n\n')
+    sys.exit(pytest.main([__file__, '-s', '-vvv']))
+
+    
+if __name__ == '__main__':
+    main()
+    

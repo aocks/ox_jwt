@@ -14,7 +14,8 @@ readme = "README.md"
 dependencies = [
     "requests",
     "flask",
-    "pyjwt[crypto]",   
+    "pyjwt[crypto]",
+    "pytest"
 ]
 
 [project.urls]
@@ -36,3 +37,5 @@ dev = [
 # installed, specify them here.
 package-data = { "sample" = ["*.dat"] }
 
+[project.scripts]
+test_ox_jwt = "ox_jwt.test_app:main"
