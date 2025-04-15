@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ox_jwt"
+version = "0.1.0"
+description = "Demonstration of how to use JWTs."
+authors = [
+    { name = "Emin Martinian", email = "emin@aocks.com" }
+]
+license-files = ["LICEN[CS]E*"]
+readme = "README.md"
+dependencies = [
+    "requests",
+    "flask",
+    "pyjwt[crypto]",   
+]
+
+[project.urls]
+Homepage = "https://github.com/aocks/ox_jwt"
+Documentation = "https://github.com/aocks/ox_jwt"
+Repository = "https://github.com/aocks/ox_jwt.git"
+Issues = "https://github.com/aocks/ox_jwt/issues"
+
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pylint",
+]
+
+
+[tool.setuptools]
+# If there are data files included in your packages that need to be
+# installed, specify them here.
+package-data = { "sample" = ["*.dat"] }
+
