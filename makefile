@@ -31,8 +31,15 @@ README.md: README.org  ## Create markdown README file.
 pylint:  ## Run pylint on python files.
 	pylint src/ox_jwt
 
-test:   ## Test nginx.
+test_python:  ## Test python code
+	py.test src/ox_jwt
+
+test_nginx:   ## Test nginx.
 	$(MAKE) -C nginx test_ojwt_nginx
+
+test:  ## Test everything.
+	$(MAKE) test_python
+	$(MAKE) test_nginx
 
 clean:  ## Clean up generated files.
 	$(MAKE) -C nginx clean
