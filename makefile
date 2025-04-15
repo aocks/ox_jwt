@@ -7,7 +7,7 @@
 .DEFAULT_GOAL := help
 
 # Indicate targets which are not files but commands
-.PHONY: clean help test
+.PHONY: clean help test pylint
 
 help:
 	@echo " "
@@ -17,6 +17,9 @@ help:
 	@echo "clean:   Clean out intermediate files which we can auto-generate."
 	@echo "help:    Shows this help message."
 	@echo " "
+
+pylint:
+	pylint src/ox_jwt
 
 test:
 	$(MAKE) -C nginx test_ojwt_nginx
