@@ -319,7 +319,7 @@ Base64 encoded header.payload.signature:
 
 #+ATTR_REVEAL: :frag appear :frag_idx 1
 #+BEGIN_src shell
-HEADER:     { "alg": "HS256", "typ": "JWT" }
+HEADER:     { "alg": "EdDSA", "typ": "JWT" }
 #+END_src
 
 #+ATTR_REVEAL: :frag appear :frag_idx 2
