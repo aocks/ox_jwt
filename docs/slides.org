@@ -28,6 +28,9 @@
 (setq org-export-babel-evaluate 't)
 #+END_SRC
 
+#+RESULTS:
+: t
+
 
 * Code Fragment Example :noexport:
 
@@ -170,7 +173,7 @@ Server responds with JWT:
 
 #+ATTR_REVEAL: :frag (appear appear)
 - header describing JWT
-- claims describing information/rights
+- claims describing info/rights (iat, nbf, exp, etc.)
 - signature from Auth Server
 
 #+name: jwt-auth-vs-app-auth-response
@@ -357,6 +360,12 @@ MC4CAQAwBQYDK2VwBCIEIC+D6rD2YbXtV0ccR3smoR0ynhVuyyqvplFLbQWDdAtn
 
 ** Secret Key
 
+#+BEGIN_NOTES
+- We use EdDSA because it is secure, short, and deterministic.
+- You could use ESA256, but beware that uses a nonce and is non-deterministic.
+#+END_NOTES
+
+#+name: create-keys
 #+BEGIN_SRC python :session jwt_example :exports code :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
 import base64, jwt  #  pip install 'pyjwt[crypto]'
 from cryptography.hazmat.primitives.asymmetric import ed25519
@@ -375,7 +384,6 @@ secret_key = (  # We hard code secret key so you can verify results
 )
 #+END_SRC
 
-#+RESULTS:
 
 ** Public Key
 
@@ -451,6 +459,25 @@ def support_urgent():
     ... # process ending support request
 #+END_SRC
 
+** Starting Flask
+
+#+name: start-flask
+#+BEGIN_SRC python :session jwt_example :exports code :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+import os
+import sys
+import subprocess
+
+os.chdir(os.path.expanduser('~/code/ox_jwt/src/ox_jwt'))
+my_env = os.environ.copy()
+my_env['FLASK_JWT_KEY'] = public_key.split('\n')[1]
+my_env['FLASK_JWT_ALGS'] = 'EdDSA,ES256'
+proc = subprocess.Popen([sys.executable, 'app.py'], env=my_env)
+# Use proc.kill() to shutdown server
+
+#+END_SRC
+
+#+RESULTS: start-flask
+
 * Example of =@requires_jwt=
 
 #+BEGIN_SRC python
@@ -463,12 +490,39 @@ def requires_jwt(func):
         try:
             g.decoded_jwt = jwt.decode(token, algorithms=['ES256'],
                                        key=current_app.config['J_KEY'])
-            check_nbf_and_exp()  # ensure active and not expired
             return func(*args, **kwargs)
         except Exception as problem:
             return f'{problem=}', 401 # return 401 or other error code
     return decorated
 #+END_SRC
+
+** Ensure Valid Token
+
+#+name: ensure-valid-token
+#+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+import requests
+
+req = requests.get('http://127.0.0.1:5000/hello', headers={
+    'Authorization': f'Bearer {example_jwt}mybad'})  # bad token
+print(f'Bad token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+
+req = requests.get('http://127.0.0.1:5000/hello', headers={
+    'Authorization': f'Bearer {example_jwt}'})
+print(f'Good token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+#+END_SRC
+
+#+RESULTS: ensure-valid-token
+: Bad token response:
+:   code: 401
+:   text: problem=InvalidSignatureError('Signature verification failed')
+: 
+: Good token response:
+:   code: 200
+:   text: Hello World!
+
+
 
 * Example of =@jwt_claims=
 
@@ -489,6 +543,65 @@ def jwt_claims(claims_list):
     return make_decorator
 #+END_SRC
 
+** Ensure Claims (Bad Token)
+
+#+name: ensure-valid-claims-bad-token
+#+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+import datetime, requests
+
+req = requests.get('http://127.0.0.1:5000/support/urgent', headers={
+    'Authorization': f'Bearer {example_jwt}'})  # bad token
+
+print(f'Bad token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+#+END_SRC
+
+#+RESULTS: ensure-valid-claims-bad-token
+: Bad token response:
+:   code: 401
+:   text: Missing claims: ['premium_user']
+
+** Ensure Claims (Bad Claims)
+
+#+name: ensure-valid-claims-bad-claim
+#+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+
+premium_jwt = jwt.encode(headers={'typ':'JWT', 'alg':'EdDSA'},
+    payload={'sub': 'a', 'premium_user': 'b', 'iat': 1}, key=sk)
+
+req = requests.get('http://127.0.0.1:5000/support/urgent', headers={
+    'Authorization': f'Bearer {premium_jwt}'})
+
+print(f'Premium token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+#+END_SRC
+
+#+RESULTS: ensure-valid-claims-bad-claim
+: Premium token response:
+:   code: 401
+:   text: Token age 20193 days, 17:37:05.670865 not within 0:00:30
+
+** Ensure Claims (Success)
+
+#+name: ensure-valid-claims-good
+#+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+now = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+recent_premium_jwt = jwt.encode(headers={'typ':'JWT', 'alg':'EdDSA'},
+    payload={'sub': 'a', 'premium_user': 'b', 'iat': int(now)}, key=sk)
+
+req = requests.get('http://127.0.0.1:5000/support/urgent', headers={
+    'Authorization': f'Bearer {recent_premium_jwt}'})
+
+print(f'Recent premium token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+#+END_SRC
+
+#+RESULTS: ensure-valid-claims-good
+: Recent premium token response:
+:   code: 200
+:   text: processing support request for user b
+
+
 * Separate validation from parsing
 
 #+BEGIN_NOTES
@@ -504,7 +617,7 @@ and separate validation from parsing.
 
 #+COMMENT: FIXME: consider diagram of NGINX idea
 
-* Traps, Vulnerabilities, and Anti-Patterns
+* Anti-Patterns
 
 #+ATTR_REVEAL: :frag (appear appear appear)
 - Beware using header fields to check signature
@@ -514,24 +627,163 @@ and separate validation from parsing.
 - Token revocation issue: access/refresh tokens
 
 
-* Revocation via Access/Refresh Tokens
+* Revocation via Access/Refresh
   :PROPERTIES:
   :ID:       b06374ea-7534-4153-b5e6-8e2aa62a24c5
   :END:
 
-#+COMMENT: FIXME: need more work here
-#+COMMENT: FIXME: might want diagram here
 
-After initial credential check (e.g., username/password or API
-key/secret), Auth server provides:
-
-- "refresh token" with long expiry
-  - can be used to get access token without credential check
-- "access token" with short expiry
+#+ATTR_REVEAL: :frag (none appear)
+- Problem: Can't cancel or logout a JWT 
+- Solution: Refresh/Access token
+  - "refresh token" with long expiry
+  - used to get access token w/o credential check
+  - "access token" with short expiry
   - can be used to access services
 
+
+#+BEGIN_NOTES
 On security events (role changes, credential changes, hacks), auth
 server will invalidate refresh token + require new credential check.
+#+END_NOTES
+
+* Get Refresh Token
+
+#+name: jwt-get-refresh
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-get-refresh.jpg :eval never-export
+
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="Get JWT\nRefresh Token\n(long lived)", constraint=false, splines=ortho];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho];
+    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho, style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+#+END_SRC
+
+#+RESULTS: jwt-get-refresh
+[[file:images/jwt-get-refresh.jpg]]
+
+* Get Access Token
+
+#+name: jwt-get-access
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-get-access.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="Get JWT\nAccess Token\n(short lived)", constraint=false, splines=ortho];
+    Client -> AuthServer [label="Send Refresh\nToken", constraint=false, splines=ortho];
+    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho, style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+#+END_SRC
+
+#+RESULTS: jwt-get-access
+[[file:images/jwt-get-access.jpg]]
+
+* Use Access Token
+
+#+name: jwt-use-access
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-use-access.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="Get JWT\nAccess Token\n(short lived)", constraint=false, splines=ortho, style=invis];
+    Client -> AuthServer [label="Send Refresh\nToken", constraint=false, splines=ortho,style=invis];
+    Client -> AppServer [label="Send JWT\nAccess Token\nto Request Service", constraint=false, splines=ortho];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+#+END_SRC
+
+#+RESULTS: jwt-use-access
+[[file:images/jwt-use-access.jpg]]
+
+* Revocation
+
+#+name: jwt-revoke
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-revoke.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="Cancel Refresh\nToken.  Require\nFresh Login", constraint=false, splines=ortho, penwidth=0, dir=none];
+    Client -> AuthServer [label="Logout/Cancel\n or Fraud\nDetected", constraint=false, splines=ortho, style=dashed];
+    Client -> AppServer [label="Send JWT\nAccess Token\nto Request Service", constraint=false, splines=ortho, style=invis];
+
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+#+END_SRC
+
+#+RESULTS: jwt-revoke
+[[file:images/jwt-revoke.jpg]]
 
 * Summary and next steps
 
