@@ -48,10 +48,11 @@ print("This appears after clicking")
 
 Used for authentication/authorization such as:
 
+
 - front-end client to access back-end or API server
 - compact, [[https://datatracker.ietf.org/doc/html/rfc7519][standardized]], secured, customizable
 - "state-less" alternative to cookies/sessions
-- scalable, performant, distributed trust
+- slides/examples: https://github.com/aocks/ox_jwt
 
 
 #+BEGIN_NOTES
@@ -614,6 +615,8 @@ and separate validation from parsing.
 - Validation can be slow for some keys
 - Can use middleware to verify signature
 - e.g., NGINX can verify before passing to app server
+  - See implementation in =nginx= directory:
+  - https://github.com/aocks/ox_jwt/
 
 #+COMMENT: FIXME: consider diagram of NGINX idea
 
@@ -796,7 +799,7 @@ to go with an existing platform. Many of those use JWTs under the hood
 so it's still useful to have a high level understanding of the basic diea.
 #+END_NOTES
 
-#+ATTR_REVEAL: :frag (none none none appear appear)
+#+ATTR_REVEAL: :frag (none none none appear appear appear)
 - Distributed trust can enable many use cases
 - JWTs = secure, efficient, standardized auth tool
 - Python decorators = nice way to validate claims
@@ -804,7 +807,7 @@ so it's still useful to have a high level understanding of the basic diea.
   - [[https://pyjwt.readthedocs.io/en/stable/][pyjwt]], [[https://flask-jwt-extended.readthedocs.io/en/stable/][flask-jwt-extended]], [[https://django-rest-framework-simplejwt.readthedocs.io/en/latest/][djangorestframework-simplejwt]]
 - Platforms:
   - [[https://auth0.com][auth0]], [[https://supertokens.com/][supertokens]], [[https://aws.amazon.com/cognito/][cognito]], [[https://www.keycloak.org/][keycloak]]
-
+- Slides/examples:  https://github.com/aocks/ox_jwt/ 
 
 
 
