@@ -2,7 +2,7 @@
 
 #+COMMENT: using timestamp:nil suppresses "created at" in title
 #+COMMENT: using num:nil prevents slide titles being numbered
-#+OPTIONS: timestamp:nil num:nil
+#+OPTIONS: timestamp:nil num:nil toc:nil ^:{}
 
 #+REVEAL_REVEAL_JS_VERSION: 4
 #+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
@@ -91,7 +91,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -143,7 +143,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -186,7 +186,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -215,8 +215,8 @@ digraph auth_system {
 
 #+BEGIN_NOTES
 - Distributed Trust
-- App Server can be load balanced or serverless
-- App Server can be maintained with lower security requirements
+- App Server(s) can be load balanced or serverless
+- App Server(s) can be maintained with lower security requirements
 #+END_NOTES
 
 
@@ -239,7 +239,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -272,9 +272,9 @@ digraph auth_system {
 Auth Server has **secrets**; needs **security** + maintenance
 
 #+ATTR_REVEAL: :frag (appear appear)
-- App Server needs public keys; low security
+- App Server(s) needs public keys; low security
 - Easy to deploy App Server(s); e.g., serverless
-- Lower security for App Server, logs, debug, etc.
+- Lower security for App Server(s), logs, debug, etc.
 
 #+name: jwt-auth-vs-app-separate
 #+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-separate.jpg :eval never-export
@@ -285,7 +285,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -385,6 +385,8 @@ secret_key = (  # We hard code secret key so you can verify results
 )
 #+END_SRC
 
+#+RESULTS: create-keys
+
 
 ** Public Key
 
@@ -479,6 +481,7 @@ proc = subprocess.Popen([sys.executable, 'app.py'], env=my_env)
 
 #+RESULTS: start-flask
 
+
 * Example of =@requires_jwt=
 
 #+BEGIN_SRC python
@@ -489,8 +492,9 @@ def requires_jwt(func):
         if not token:
             return 'missing token', 401  # if no token return error   
         try:
-            g.decoded_jwt = jwt.decode(token, algorithms=['ES256'],
-                                       key=current_app.config['J_KEY'])
+            g.decoded_jwt = jwt.decode(
+                token, algorithms=['EdDSA'],
+                key=current_app.config['JWT_KEY'])  # public key
             return func(*args, **kwargs)
         except Exception as problem:
             return f'{problem=}', 401 # return 401 or other error code
@@ -531,7 +535,7 @@ print(f'Good token response:\n  code: {req.status_code}\n'
 #+COMMENT: or maybe have as backup slide
 
 #+BEGIN_SRC python
-def jwt_claims(claims_list):
+def jwt_claims(claims_list: typing.Sequence[str]):
     def make_decorator(func):
         @wraps(func)
         def decorated(*args, **kwargs):        
@@ -602,29 +606,83 @@ print(f'Recent premium token response:\n  code: {req.status_code}\n'
 :   code: 200
 :   text: processing support request for user b
 
+* Example Use Case: Proxy
 
-* Separate validation from parsing
+#+ATTR_REVEAL: :frag (none appear appear)
+- Auth Server grants JWT letting Alice to act for Bob
+- claims: ={"sub": "Alice", "proxy": "Bob"}=
+- Alice sends request combining to act for Bob
 
-#+BEGIN_NOTES
-We can go one step beyond separating authentication from validation
-and separate validation from parsing.
 
-- aside: NGINX+JWTs can protect stand-alone sites
-#+END_NOTES
+* Example Use Case: Proxy
 
-- Validation can be slow for some keys
-- Can use middleware to verify signature
-- e.g., NGINX can verify before passing to app server
-  - See implementation in =nginx= directory:
-  - https://github.com/aocks/ox_jwt/
 
-#+COMMENT: FIXME: consider diagram of NGINX idea
+- Auth Server grants JWT letting Alice to act for Bob
+- claims: ={"sub": "Alice", "proxy": "Bob"}=
+- Alice sends request combining to act for Bob
+
+#+BEGIN_SRC python
+@APP.route("/issue")
+@requires_jwt
+def issue():
+    "Example route to create an issue."
+    user = g.decoded_jwt.get('proxy', g.decoded_jwt.get('sub'))
+    msg = f'Created issue assigned to {user}.'
+    # ... Create the actual issue here
+
+
+
+    return msg
+#+END_SRC
+
+* Example Use Case: Proxy
+
+- Auth Server grants JWT letting Alice to act for Bob
+- claims: ={"sub": "Alice", "proxy": "Bob"}=
+- Alice sends request combining to act for Bob
+
+#+BEGIN_SRC python
+@APP.route("/issue")
+@requires_jwt
+def issue():
+    "Example route to create an issue."
+    user = g.decoded_jwt.get('proxy', g.decoded_jwt.get('sub'))
+    msg = f'Created issue assigned to {user}.'
+    # ... Create the actual issue here
+    real_user = g.decoded_jwt['sub']
+    if real_user != user:
+        msg += f'\n{real_user} acted on behalf of {user}'
+    return msg
+#+END_SRC
+
+** Python demo
+#+name: proxy-example
+#+BEGIN_SRC python :session jwt_example :results output :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+
+now = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+proxy_example_jwt = jwt.encode(headers={'typ':'JWT', 'alg':'EdDSA'},
+    payload={'sub': 'Alice', 'proxy': 'Bob'}, key=sk)
+
+req = requests.get('http://127.0.0.1:5000/issue', headers={
+    'Authorization': f'Bearer {proxy_example_jwt}'})
+print(req.text)
+
+#+END_SRC
+
+#+RESULTS: proxy-example
+: 127.0.0.1 - - [24/Apr/2025 13:25:28] "GET /issue HTTP/1.1" 200 -
+: Created issue assigned to Bob.
+: Alice acted on behalf of Bob
+
+
+
 
 * Anti-Patterns
 
 #+ATTR_REVEAL: :frag (appear appear appear)
 - Beware using header fields to check signature
   - don't trust =alg= field or limit possibilities
+    - e.g., ~algorithms=['EdDSA']~
   - be careful with =kid=, =jku=, =jwk=, etc.
 - Don't simulate sessions with JWTs
 - Token revocation issue: access/refresh tokens
@@ -650,6 +708,7 @@ On security events (role changes, credential changes, hacks), auth
 server will invalidate refresh token + require new credential check.
 #+END_NOTES
 
+
 * Get Refresh Token
 
 #+name: jwt-get-refresh
@@ -662,7 +721,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -672,7 +731,7 @@ digraph auth_system {
 
     // Define connections
     AuthServer -> Client [label="Get JWT\nRefresh Token\n(long lived)", constraint=false, splines=ortho];
-    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth\nMFA, etc.)", constraint=false, splines=ortho];
     Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho, style=invis];
 
     // Define hidden edges to force layout
@@ -685,6 +744,7 @@ digraph auth_system {
 #+RESULTS: jwt-get-refresh
 [[file:images/jwt-get-refresh.jpg]]
 
+
 * Get Access Token
 
 #+name: jwt-get-access
@@ -696,7 +756,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -719,6 +779,7 @@ digraph auth_system {
 #+RESULTS: jwt-get-access
 [[file:images/jwt-get-access.jpg]]
 
+
 * Use Access Token
 
 #+name: jwt-use-access
@@ -730,7 +791,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -753,6 +814,7 @@ digraph auth_system {
 #+RESULTS: jwt-use-access
 [[file:images/jwt-use-access.jpg]]
 
+
 * Revocation
 
 #+name: jwt-revoke
@@ -764,7 +826,7 @@ digraph auth_system {
         rank=same;
         AuthServer [label="Auth Server", shape=box];
         hidden [style=invis];
-        AppServer [label="App Server", shape=box];
+        AppServer [label="App Server(s)", shape=box];
     }
 
     subgraph bottom {
@@ -787,6 +849,42 @@ digraph auth_system {
 
 #+RESULTS: jwt-revoke
 [[file:images/jwt-revoke.jpg]]
+
+
+* Separate validation from parsing
+
+#+BEGIN_NOTES
+We can go one step beyond separating authentication from validation
+and separate validation from parsing.
+
+- aside: NGINX+JWTs can protect stand-alone sites
+#+END_NOTES
+
+#+ATTR_REVEAL: :frag (none appear appear)
+- Can use middleware to verify signature
+- e.g., NGINX can verify before passing to app server
+  #+RESULTS: nginx-example
+  [[file:images/nginx-example.jpg]]
+- See implementation in =nginx= directory:
+- https://github.com/aocks/ox_jwt ([[https://github.com/aocks/ox_jwt/blob/main/nginx/conf.d/example.conf#L44][example.conf]])
+
+#+name: nginx-example
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/nginx-example.jpg :eval never-export
+
+,#+BEGIN_SRC dot
+digraph RequestFlow {
+    rankdir = LR;
+    request [label="request\nwith JWT"];
+    request -> nginx;
+
+    subgraph cluster_0 {
+        nginx [label="NGINX Server\nvalidates JWT\nefficiently"];
+        label="Application Server";
+        nginx -> "Flask server\nparses JWT claims";
+    }
+}
+#+END_SRC
+
 
 * Summary and next steps
 
