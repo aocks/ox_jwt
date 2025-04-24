@@ -154,6 +154,20 @@ def test_premium_enc_dec():
     assert req.text == 'processing support request for user user@example.com'
 
 
+def test_proxy():
+    """Test how a proxy user would owrk.
+    """
+    now = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+    my_jwt = make_jwt(FlaskServerManager.secret_key, payload={
+        'sub': 'Alice', 'proxy': 'Bob', 'iat': int(now)})
+    req = requests.get(
+        f'http://127.0.0.1:{FlaskServerManager.port}/issue',
+        headers={'Authorization': f'Bearer {my_jwt}'}, timeout=30)
+    assert req.status_code == 200
+    assert req.text == (
+        'Created issue assigned to Bob.\nAlice acted on behalf of Bob')
+    
+
 def main():
     "Run tests if module is run as main command."
 
