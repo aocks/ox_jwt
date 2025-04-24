@@ -73,6 +73,19 @@ def jwt_iat(within: datetime.timedelta):
     return make_decorator
 
 
+@APP.route("/issue")
+@requires_jwt
+def issue():
+    "Example route to create an issue."
+    effective_user = g.decoded_jwt.get('proxy', g.decoded_jwt.get('sub'))
+    # ... Create the actual issue here
+    msg = f'Created issue assigned to {effective_user}.'
+    real_user = g.decoded_jwt['sub']
+    if real_user != effective_user:
+        msg += f'\n{real_user} acted on behalf of {effective_user}'
+    return msg
+
+
 @APP.route("/hello")
 @requires_jwt
 def hello():
