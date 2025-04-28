@@ -447,6 +447,12 @@ Decoded Payload from JWT:
 #+RESULTS: decoded-jwt
 : {'sub': 'a', 'name': 'b', 'iat': 1}
 
+* Main JWT Fields
+
+- *sub*: Subject (username, email, etc.)
+- *iat*: Issued at (useful for checking freshness)
+- *exp*: Expiry (useful for managing life-cycle )
+- *nbf*: Not before (useful for managing life-cycle )
 
 * Python/Flask Example
 
@@ -904,7 +910,7 @@ so it's still useful to have a high level understanding of the basic diea.
 - Libraries:
   - [[https://pyjwt.readthedocs.io/en/stable/][pyjwt]], [[https://flask-jwt-extended.readthedocs.io/en/stable/][flask-jwt-extended]], [[https://django-rest-framework-simplejwt.readthedocs.io/en/latest/][djangorestframework-simplejwt]]
 - Platforms:
-  - [[https://auth0.com][auth0]], [[https://supertokens.com/][supertokens]], [[https://aws.amazon.com/cognito/][cognito]], [[https://www.keycloak.org/][keycloak]]
+  - [[https://auth0.com][auth0]], [[https://supertokens.com/][supertokens]], [[https://docs.aws.amazon.com/cognito/][cognito]], [[https://www.keycloak.org/][keycloak]]
 - Slides/examples:  https://github.com/aocks/ox_jwt/ 
 
 
