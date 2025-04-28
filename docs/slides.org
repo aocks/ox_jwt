@@ -1,0 +1,920 @@
+
+
+#+COMMENT: using timestamp:nil suppresses "created at" in title
+#+COMMENT: using num:nil prevents slide titles being numbered
+#+OPTIONS: timestamp:nil num:nil toc:nil ^:{}
+
+#+REVEAL_REVEAL_JS_VERSION: 4
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
+#+REVEAL_PLUGINS: (notes)
+#+REVEAL_THEME: solarized
+#+REVEAL_INIT_OPTIONS: fragments:true, transition:'fade'
+
+
+#+COMMENT: Use `s` to engage speaker mode
+
+#+TITLE: Tips, Tricks, and Reasons for JSON Web Tokens (JWTs)
+#+AUTHOR: Emin Martinian
+
+
+* Basic Setup :noexport:
+
+#+BEGIN_SRC emacs-lisp :exports none
+(require 'ox-reveal)
+
+;; Make sure to use version 4.0 and set REVEAL_REVEAL_JS_VERSION below
+(setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/")
+(setq org-reveal-plugins '(notes))
+(setq org-export-babel-evaluate 't)
+#+END_SRC
+
+#+RESULTS:
+: t
+
+
+* Code Fragment Example :noexport:
+
+#+BEGIN_SRC python
+print("This appears immediately")
+#+END_SRC
+
+#+ATTR_REVEAL: :frag appear
+#+BEGIN_SRC python
+print("This appears after clicking")
+#+END_SRC
+
+
+* JWT: JSON Web Token
+
+Used for authentication/authorization such as:
+
+
+- front-end client to access back-end or API server
+- compact, [[https://datatracker.ietf.org/doc/html/rfc7519][standardized]], secured, customizable
+- "state-less" alternative to cookies/sessions
+- slides/examples: https://github.com/aocks/ox_jwt
+
+
+#+BEGIN_NOTES
+- standard: [[https://datatracker.ietf.org/doc/html/rfc7519][RFC 7519]]
+#+END_NOTES
+
+* Why JWTs?
+
+Imagine app with many features + servers + engineers:
+
+#+ATTR_REVEAL: :frag (appear appear appear)
+- Load balance, payments, profiles, PII, DB
+- Local/remote/international workers + consultants
+- How to manage security?
+  - Can't give everyone access to sensitive info
+
+
+* JWT Architecture
+#+BEGIN_NOTES
+- Auth server manages passwords, takes credit cards, etc.
+- Must be secure and in sync; hard to load balance
+- Cannot let just any employee have access
+#+END_NOTES
+
+Separate authentication from validation/application:
+- Authentication requires secret keys (high security)
+- Validation can use public key (less security)
+- Easier to manage secrets, keys, load, sync, etc.
+
+#+name: jwt-auth-vs-app-start
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-start.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho, style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth\nor credit card)", constraint=false, splines=ortho, style=invis];
+    Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho,style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app-start
+[[file:images/jwt-auth-vs-app-start.jpg]]
+
+
+* JWT: Authentication Request
+
+#+BEGIN_NOTES
+Managing the authentication server is more complicated.
+- Can't allow just anyone to access/maintain/deploy (has secrets)
+- Must maintain state (e.g., current user password) so hard to load balance
+#+END_NOTES
+
+
+Client authenticates to server:
+
+#+ATTR_REVEAL: :frag (appear appear)
+- Auth server must be secure
+- Payment or Login with username/password/MFA
+- May require database check, locks, other slow ops
+
+
+
+#+name: jwt-auth-vs-app-auth
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho, style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth or\ncredit card)", constraint=false, splines=ortho];
+    Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho,style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app-auth
+[[file:images/jwt-auth-vs-app-auth.jpg]]
+
+
+* JWT: Authentication Response
+
+Server responds with JWT:
+
+#+ATTR_REVEAL: :frag (appear appear)
+- header describing JWT
+- claims describing info/rights (iat, nbf, exp, etc.)
+- signature from Auth Server
+
+#+name: jwt-auth-vs-app-auth-response
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth-response.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
+    Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho,style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app-auth-response
+[[file:images/jwt-auth-vs-app-auth-response.jpg]]
+
+
+* JWT: Application Request
+
+#+BEGIN_NOTES
+- Distributed Trust
+- App Server(s) can be load balanced or serverless
+- App Server(s) can be maintained with lower security requirements
+#+END_NOTES
+
+
+Client sends JWT to App Server:
+
+#+ATTR_REVEAL: :frag (appear appear)
+- App Server validates JWT with public key
+- No DB/state/sync/update; can be serverless
+- Checks JWT for rights + provides service
+
+
+
+
+#+name: jwt-auth-vs-app-request-app
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-request-app.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho,style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
+    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app-request-app
+[[file:images/jwt-auth-vs-app-request-app.jpg]]
+
+
+
+
+
+* Separate Auth From Validation
+
+Auth Server has **secrets**; needs **security** + maintenance
+
+#+ATTR_REVEAL: :frag (appear appear)
+- App Server(s) needs public keys; low security
+- Easy to deploy App Server(s); e.g., serverless
+- Lower security for App Server(s), logs, debug, etc.
+
+#+name: jwt-auth-vs-app-separate
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-separate.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="JWT", constraint=false, splines=ortho,style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
+    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho, style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+
+#+end_src
+
+#+RESULTS: jwt-auth-vs-app-separate
+[[file:images/jwt-auth-vs-app-separate.jpg]]
+
+
+
+
+
+
+* What do JWTs look like?
+
+Base64 encoded header.payload.signature:
+
+#+ATTR_REVEAL: :frag appear :frag_idx 1
+#+BEGIN_src shell
+HEADER:     { "alg": "EdDSA", "typ": "JWT" }
+#+END_src
+
+#+ATTR_REVEAL: :frag appear :frag_idx 2
+#+BEGIN_src shell
+PAYLOAD:    {"sub": "a", "name": "arbitrary data", "iat": 1 }
+#+END_src
+
+#+ATTR_REVEAL: :frag appear :frag_idx 3
+#+BEGIN_src shell
+SIGNATURE:  SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-L
+            L5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
+            
+#+END_src
+
+#+ATTR_REVEAL: :frag appear :frag_idx 4
+#+BEGIN_src shell
+ENCODED JWT:   eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9
+               .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
+               .SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-L
+                L5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
+#+END_src
+
+
+#+ATTR_REVEAL: :frag appear :frag_idx 5
+Signed using EdDSA with secret key:
+
+#+ATTR_REVEAL: :frag appear :frag_idx 5
+#+BEGIN_src python
+MC4CAQAwBQYDK2VwBCIEIC+D6rD2YbXtV0ccR3smoR0ynhVuyyqvplFLbQWDdAtn
+#+END_src
+
+
+#+BEGIN_NOTES
+- Use https://jwt.io/#debugger-io to verify/validate/decode
+- You can put arbitrary data in the payload:
+  - indicate username, roles, rights, restrictions, payments
+#+END_NOTES
+
+** Secret Key
+
+#+BEGIN_NOTES
+- We use EdDSA because it is secure, short, and deterministic.
+- You could use ESA256, but beware that uses a nonce and is non-deterministic.
+#+END_NOTES
+
+#+name: create-keys
+#+BEGIN_SRC python :session jwt_example :exports code :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+import base64, jwt  #  pip install 'pyjwt[crypto]'
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+
+secret_key = base64.b64encode(  # How to generate new key
+    ed25519.Ed25519PrivateKey.generate().private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption())
+).decode('utf8')
+
+secret_key = (  # We hard code secret key so you can verify results
+    'MC4CAQAwBQYDK2VwBCIEIC+D6rD2YbXtV0ccR3smoR0ynhVuyyqvplFLbQWDdAtn'
+)
+#+END_SRC
+
+#+RESULTS: create-keys
+
+
+** Public Key
+
+#+name: get-public-key
+#+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
+sk = serialization.load_der_private_key(  # de-serialize encoded key
+    base64.b64decode(secret_key),backend=default_backend(),
+    password=None)
+
+pk = sk.public_key()
+public_key = pk.public_bytes(  # serialize
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo
+).decode('utf8')
+                
+print(public_key)
+#+END_SRC
+
+
+#+RESULTS: get-public-key
+: -----BEGIN PUBLIC KEY-----
+: MCowBQYDK2VwAyEAUVLjZWAVK5ZE1ewI5QBdr0Nig1Qkx3kl5zHIADvw0M8=
+: -----END PUBLIC KEY-----
+
+
+
+** Encoding Example JWT
+
+#+NAME: encoded-jwt
+#+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
+import textwrap  # just for display
+
+example_jwt = jwt.encode(
+    headers={'typ':'JWT', 'alg':'EdDSA'},
+    payload={'sub': 'a', 'name': 'b', 'iat': 1},
+    key=sk)  # this is the JWT that would be used
+print(textwrap.indent(textwrap.fill(       # format for
+      '\n.'.join(example_jwt.split('.')),  # nice display
+     width=44, replace_whitespace=False), prefix='  '))
+#+END_SRC
+
+Encoded JWT:
+#+RESULTS: encoded-jwt
+:   eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9
+:   .eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
+:   .SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-
+:   LL5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
+
+** Decoding Example JWT
+
+#+NAME: decoded-jwt
+#+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
+decoded_jwt = jwt.decode(example_jwt, algorithms=['EdDSA'], key=pk)
+print(decoded_jwt)
+#+END_SRC
+
+Decoded Payload from JWT:
+#+RESULTS: decoded-jwt
+: {'sub': 'a', 'name': 'b', 'iat': 1}
+
+* Main JWT Fields
+
+- *sub*: Subject (username, email, etc.)
+- *iat*: Issued at (useful for checking freshness)
+- *exp*: Expiry (useful for managing life-cycle )
+- *nbf*: Not before (useful for managing life-cycle )
+
+* Python/Flask Example
+
+Easy to verify/decode using libraries (e.g., =pyjwt=) and compose
+checks using decorators:
+
+#+BEGIN_SRC python
+@app.route('/support/urgent')
+@requires_jwt                  # validates JWT
+@jwt_claims(['paid_support'])  # ensures token is for premium user
+@jwt_iat(datetime.timedelta(hours=24))  # ensure recent token
+def support_urgent():
+    ... # process ending support request
+#+END_SRC
+
+** Starting Flask
+
+#+name: start-flask
+#+BEGIN_SRC python :session jwt_example :exports code :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+import os
+import sys
+import subprocess
+
+os.chdir(os.path.expanduser('~/code/ox_jwt/src/ox_jwt'))
+my_env = os.environ.copy()
+my_env['FLASK_JWT_KEY'] = public_key.split('\n')[1]
+my_env['FLASK_JWT_ALGS'] = 'EdDSA,ES256'
+proc = subprocess.Popen([sys.executable, 'app.py'], env=my_env)
+# Use proc.kill() to shutdown server
+
+#+END_SRC
+
+#+RESULTS: start-flask
+
+
+* Example of =@requires_jwt=
+
+#+BEGIN_SRC python
+def requires_jwt(func):
+    @wraps(func)
+    def decorated(*args, **kwargs):        
+        token = request.headers.get("Authorization").split(" ")[1]
+        if not token:
+            return 'missing token', 401  # if no token return error   
+        try:
+            g.decoded_jwt = jwt.decode(
+                token, algorithms=['EdDSA'],
+                key=current_app.config['JWT_KEY'])  # public key
+            return func(*args, **kwargs)
+        except Exception as problem:
+            return f'{problem=}', 401 # return 401 or other error code
+    return decorated
+#+END_SRC
+
+** Ensure Valid Token
+
+#+name: ensure-valid-token
+#+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+import requests
+
+req = requests.get('http://127.0.0.1:5000/hello', headers={
+    'Authorization': f'Bearer {example_jwt}mybad'})  # bad token
+print(f'Bad token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+
+req = requests.get('http://127.0.0.1:5000/hello', headers={
+    'Authorization': f'Bearer {example_jwt}'})
+print(f'Good token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+#+END_SRC
+
+#+RESULTS: ensure-valid-token
+: Bad token response:
+:   code: 401
+:   text: problem=InvalidSignatureError('Signature verification failed')
+: 
+: Good token response:
+:   code: 200
+:   text: Hello World!
+
+
+
+* Example of =@jwt_claims=
+
+#+COMMENT: should we include or skip if tight on time?
+#+COMMENT: or maybe have as backup slide
+
+#+BEGIN_SRC python
+def jwt_claims(claims_list: typing.Sequence[str]):
+    def make_decorator(func):
+        @wraps(func)
+        def decorated(*args, **kwargs):        
+            missing = [c for c in claims_list
+                       if not g.decoded_jwt.get(c)]
+            if missing:
+                return f'Missing claims: {missing}', 401
+            return func(*args, **kwargs)
+        return decorated
+    return make_decorator
+#+END_SRC
+
+** Ensure Claims (Bad Token)
+
+#+name: ensure-valid-claims-bad-token
+#+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+import datetime, requests
+
+req = requests.get('http://127.0.0.1:5000/support/urgent', headers={
+    'Authorization': f'Bearer {example_jwt}'})  # bad token
+
+print(f'Bad token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+#+END_SRC
+
+#+RESULTS: ensure-valid-claims-bad-token
+: Bad token response:
+:   code: 401
+:   text: Missing claims: ['premium_user']
+
+** Ensure Claims (Bad Claims)
+
+#+name: ensure-valid-claims-bad-claim
+#+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+
+premium_jwt = jwt.encode(headers={'typ':'JWT', 'alg':'EdDSA'},
+    payload={'sub': 'a', 'premium_user': 'b', 'iat': 1}, key=sk)
+
+req = requests.get('http://127.0.0.1:5000/support/urgent', headers={
+    'Authorization': f'Bearer {premium_jwt}'})
+
+print(f'Premium token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+#+END_SRC
+
+#+RESULTS: ensure-valid-claims-bad-claim
+: Premium token response:
+:   code: 401
+:   text: Token age 20193 days, 17:37:05.670865 not within 0:00:30
+
+** Ensure Claims (Success)
+
+#+name: ensure-valid-claims-good
+#+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+now = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+recent_premium_jwt = jwt.encode(headers={'typ':'JWT', 'alg':'EdDSA'},
+    payload={'sub': 'a', 'premium_user': 'b', 'iat': int(now)}, key=sk)
+
+req = requests.get('http://127.0.0.1:5000/support/urgent', headers={
+    'Authorization': f'Bearer {recent_premium_jwt}'})
+
+print(f'Recent premium token response:\n  code: {req.status_code}\n'
+      f'  text: {req.text}\n')
+#+END_SRC
+
+#+RESULTS: ensure-valid-claims-good
+: Recent premium token response:
+:   code: 200
+:   text: processing support request for user b
+
+* Example Use Case: Proxy
+
+#+ATTR_REVEAL: :frag (none appear appear)
+- Auth Server grants JWT letting Alice to act for Bob
+- claims: ={"sub": "Alice", "proxy": "Bob"}=
+- Alice sends request combining to act for Bob
+
+
+* Example Use Case: Proxy
+
+
+- Auth Server grants JWT letting Alice to act for Bob
+- claims: ={"sub": "Alice", "proxy": "Bob"}=
+- Alice sends request combining to act for Bob
+
+#+BEGIN_SRC python
+@APP.route("/issue")
+@requires_jwt
+def issue():
+    "Example route to create an issue."
+    user = g.decoded_jwt.get('proxy', g.decoded_jwt.get('sub'))
+    msg = f'Created issue assigned to {user}.'
+    # ... Create the actual issue here
+
+
+
+    return msg
+#+END_SRC
+
+* Example Use Case: Proxy
+
+- Auth Server grants JWT letting Alice to act for Bob
+- claims: ={"sub": "Alice", "proxy": "Bob"}=
+- Alice sends request combining to act for Bob
+
+#+BEGIN_SRC python
+@APP.route("/issue")
+@requires_jwt
+def issue():
+    "Example route to create an issue."
+    user = g.decoded_jwt.get('proxy', g.decoded_jwt.get('sub'))
+    msg = f'Created issue assigned to {user}.'
+    # ... Create the actual issue here
+    real_user = g.decoded_jwt['sub']
+    if real_user != user:
+        msg += f'\n{real_user} acted on behalf of {user}'
+    return msg
+#+END_SRC
+
+** Python demo
+#+name: proxy-example
+#+BEGIN_SRC python :session jwt_example :results output :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
+
+now = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+proxy_example_jwt = jwt.encode(headers={'typ':'JWT', 'alg':'EdDSA'},
+    payload={'sub': 'Alice', 'proxy': 'Bob'}, key=sk)
+
+req = requests.get('http://127.0.0.1:5000/issue', headers={
+    'Authorization': f'Bearer {proxy_example_jwt}'})
+print(req.text)
+
+#+END_SRC
+
+#+RESULTS: proxy-example
+: 127.0.0.1 - - [24/Apr/2025 13:25:28] "GET /issue HTTP/1.1" 200 -
+: Created issue assigned to Bob.
+: Alice acted on behalf of Bob
+
+
+
+
+* Anti-Patterns
+
+#+ATTR_REVEAL: :frag (appear appear appear)
+- Beware using header fields to check signature
+  - don't trust =alg= field or limit possibilities
+    - e.g., ~algorithms=['EdDSA']~
+  - be careful with =kid=, =jku=, =jwk=, etc.
+- Don't simulate sessions with JWTs
+- Token revocation issue: access/refresh tokens
+
+
+* Revocation via Access/Refresh
+  :PROPERTIES:
+  :ID:       b06374ea-7534-4153-b5e6-8e2aa62a24c5
+  :END:
+
+
+#+ATTR_REVEAL: :frag (none appear)
+- Problem: Can't cancel or logout a JWT 
+- Solution: Refresh/Access token
+  - "refresh token" with long expiry
+  - used to get access token w/o credential check
+  - "access token" with short expiry
+  - can be used to access services
+
+
+#+BEGIN_NOTES
+On security events (role changes, credential changes, hacks), auth
+server will invalidate refresh token + require new credential check.
+#+END_NOTES
+
+
+* Get Refresh Token
+
+#+name: jwt-get-refresh
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-get-refresh.jpg :eval never-export
+
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="Get JWT\nRefresh Token\n(long lived)", constraint=false, splines=ortho];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth\nMFA, etc.)", constraint=false, splines=ortho];
+    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho, style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+#+END_SRC
+
+#+RESULTS: jwt-get-refresh
+[[file:images/jwt-get-refresh.jpg]]
+
+
+* Get Access Token
+
+#+name: jwt-get-access
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-get-access.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="Get JWT\nAccess Token\n(short lived)", constraint=false, splines=ortho];
+    Client -> AuthServer [label="Send Refresh\nToken", constraint=false, splines=ortho];
+    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho, style=invis];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+#+END_SRC
+
+#+RESULTS: jwt-get-access
+[[file:images/jwt-get-access.jpg]]
+
+
+* Use Access Token
+
+#+name: jwt-use-access
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-use-access.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="Get JWT\nAccess Token\n(short lived)", constraint=false, splines=ortho, style=invis];
+    Client -> AuthServer [label="Send Refresh\nToken", constraint=false, splines=ortho,style=invis];
+    Client -> AppServer [label="Send JWT\nAccess Token\nto Request Service", constraint=false, splines=ortho];
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+#+END_SRC
+
+#+RESULTS: jwt-use-access
+[[file:images/jwt-use-access.jpg]]
+
+
+* Revocation
+
+#+name: jwt-revoke
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-revoke.jpg :eval never-export
+
+digraph auth_system {
+    // Define subgraphs
+    subgraph top {
+        rank=same;
+        AuthServer [label="Auth Server", shape=box];
+        hidden [style=invis];
+        AppServer [label="App Server(s)", shape=box];
+    }
+
+    subgraph bottom {
+        rank=same;
+        Client [label="Client", shape=box];
+    }
+
+    // Define connections
+    AuthServer -> Client [label="Cancel Refresh\nToken.  Require\nFresh Login", constraint=false, splines=ortho, penwidth=0, dir=none];
+    Client -> AuthServer [label="Logout/Cancel\n or Fraud\nDetected", constraint=false, splines=ortho, style=dashed];
+    Client -> AppServer [label="Send JWT\nAccess Token\nto Request Service", constraint=false, splines=ortho, style=invis];
+
+
+    // Define hidden edges to force layout
+    AuthServer -> hidden [style=invis];
+    hidden -> AppServer [style=invis];
+    hidden -> Client [style=invis];
+}
+#+END_SRC
+
+#+RESULTS: jwt-revoke
+[[file:images/jwt-revoke.jpg]]
+
+
+* Separate validation from parsing
+
+#+BEGIN_NOTES
+We can go one step beyond separating authentication from validation
+and separate validation from parsing.
+
+- aside: NGINX+JWTs can protect stand-alone sites
+#+END_NOTES
+
+#+ATTR_REVEAL: :frag (none appear appear)
+- Can use middleware to verify signature
+- e.g., NGINX can verify before passing to app server
+  #+RESULTS: nginx-example
+  [[file:images/nginx-example.jpg]]
+- See implementation in =nginx= directory:
+- https://github.com/aocks/ox_jwt ([[https://github.com/aocks/ox_jwt/blob/main/nginx/conf.d/example.conf#L44][example.conf]])
+
+#+name: nginx-example
+#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/nginx-example.jpg :eval never-export
+
+,#+BEGIN_SRC dot
+digraph RequestFlow {
+    rankdir = LR;
+    request [label="request\nwith JWT"];
+    request -> nginx;
+
+    subgraph cluster_0 {
+        nginx [label="NGINX Server\nvalidates JWT\nefficiently"];
+        label="Application Server";
+        nginx -> "Flask server\nparses JWT claims";
+    }
+}
+#+END_SRC
+
+
+* Summary and next steps
+
+#+BEGIN_NOTES
+If you are writing a small application, you can quickly and easily put
+together a secure system using various JWT libraries.
+
+If you are doing a full enterprise authentication system, you may want
+to go with an existing platform. Many of those use JWTs under the hood
+so it's still useful to have a high level understanding of the basic diea.
+#+END_NOTES
+
+#+ATTR_REVEAL: :frag (none none none appear appear appear)
+- Distributed trust can enable many use cases
+- JWTs = secure, efficient, standardized auth tool
+- Python decorators = nice way to validate claims
+- Libraries:
+  - [[https://pyjwt.readthedocs.io/en/stable/][pyjwt]], [[https://flask-jwt-extended.readthedocs.io/en/stable/][flask-jwt-extended]], [[https://django-rest-framework-simplejwt.readthedocs.io/en/latest/][djangorestframework-simplejwt]]
+- Platforms:
+  - [[https://auth0.com][auth0]], [[https://supertokens.com/][supertokens]], [[https://docs.aws.amazon.com/cognito/][cognito]], [[https://www.keycloak.org/][keycloak]]
+- Slides/examples:  https://github.com/aocks/ox_jwt/ 
+
+
+
+
+
+

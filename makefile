@@ -7,19 +7,39 @@
 .DEFAULT_GOAL := help
 
 # Indicate targets which are not files but commands
-.PHONY: clean help test
+.PHONY: clean help test pylint
 
-help:
-	@echo " "
-	@echo "         The following targets are available:"
-	@echo " "
-	@echo "test:    Build and test ojwt.js file, JWT, and test with nginx."
-	@echo "clean:   Clean out intermediate files which we can auto-generate."
-	@echo "help:    Shows this help message."
-	@echo " "
+# The stuff below implements an auto help feature
+define PRINT_HELP_PYSCRIPT
+import re, sys
 
-test:
+for line in sys.stdin:
+	match = re.match(r'^([.a-zA-Z_-]+):.*?## (.*)$$', line)
+	if match:
+		target, help = match.groups()
+		print("%-20s %s" % (target, help))
+endef
+export PRINT_HELP_PYSCRIPT
+
+help:   ## Show help for avaiable targets.
+	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+
+
+README.md: README.org  ## Create markdown README file.
+	pandoc --from=org --to=markdown -o $@ $<
+
+pylint:  ## Run pylint on python files.
+	pylint src/ox_jwt
+
+test_python:  ## Test python code
+	py.test src/ox_jwt
+
+test_nginx:   ## Test nginx.
 	$(MAKE) -C nginx test_ojwt_nginx
 
-clean:
+test:  ## Test everything.
+	$(MAKE) test_python
+	$(MAKE) test_nginx
+
+clean:  ## Clean up generated files.
 	$(MAKE) -C nginx clean

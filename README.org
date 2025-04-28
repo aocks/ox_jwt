@@ -1,8 +1,12 @@
 
+#+OPTIONS: ^:{}
+
 * Introduction
 
 The =ox_jwt= repository provides some simple tools for working with JSON Web
-Tokens (JWTs).
+Tokens (JWTs) as well as illustrating some use cases with =nginx= and =python=.
+
+** nginx
 
 For example, the =nginx= sub-directory contains a fully working
 minimal example of how you can setup NGINX to only allow access to
@@ -21,9 +25,26 @@ This is useful because:
   3. All of the encryption/decryption used is open source, verifiable,
      and modifiable by you.
 
+** python
+
+The slides in [[file:docs/slides.html][docs/slides.html]] provide a detailed presentation of what
+JWTs are and how to use them in python.
+
+You can use JWTs in python with or without nginx. For example, you
+could have nginx do validation of the JWT and then provide the decoded
+JWT as a header to further python code. Alternatively, you can do JWT
+encoding and decoding purely in python.
+
+If you =pip install ox_jwt=, you can then run the command
+=test_ox_jwt= to do a simple local test of encoding JWTs and decoding
+them with a flask server. See the python files in [[file:src/ox_jwt/][src/ox_jwt/]] to see
+how the python example works.
+
 * Quickstart and Demo
 
-For a simple test of the system, you can do something like
+** nginx
+
+For a simple test of the nginx system, you can do something like
 #+BEGIN_SRC sh
 make test
 #+END_SRC
@@ -43,9 +64,34 @@ at the command line to do the following:
   6. Uses =curl= to verify that you can only access the protected
      location in your NGINX server if you have the appropriate JWT.
 
+** python
+
+For a test of the python implementation, you can do
+#+BEGIN_SRC sh
+pip install ox_jwt
+#+END_SRC
+and then run the =test_ox_jwt= command.
+
+Alternatively, you can clone the GitHub repository via something like
+#+BEGIN_SRC sh
+git clone https://github.com/aocks/ox_jwt.git
+#+END_SRC
+and then build a virtual env and install dependencies via
+#+BEGIN_SRC sh
+cd ox_jwt
+python3 -m venv venv_ox_jwt
+source venv_ox_jwt/bin/activate
+pip install -e .
+#+END_SRC
+and then run the tests/demo via:
+#+BEGIN_SRC sh
+py.test src/ox_jwt
+#+END_SRC
+
+
 * FAQ
 
-** What are some alternatives to =ox_jwt=?
+** What are some alternatives to =ox_jwt= for nginx?
 
 - SSL client certificates
   - but [[https://security.stackexchange.com/questions/198837/why-is-client-certificate-authentication-not-more-common][SSL client certificates are difficult to setup and maintain]]
@@ -59,7 +105,7 @@ at the command line to do the following:
   - [[https://www.npmjs.com/package/jwt-simple][jwt-simple]] for javascript (used by this project as well)
   - [[https://pyjwt.readthedocs.io/en/stable/][pyjwt]] for general python JWT tools
 
-** Aren't there some other easy alternatives?
+** Aren't there some other easy alternatives for nginx?
 
 Not that I am aware of. Most other approaches to JWT validation in
 your *APPLICATION* server instead of your *NGINX* server or proxy or
@@ -67,9 +113,9 @@ require a commercial (i.e., non-open-source) server.
 
 ** Why do JWT validation in NGINX?
 
-Plenty of applications do JWT validation and decoding themselves. That
-is a fine and useful thing to do and can also be combined with
-validating the JWT in NGINX as well.
+Plenty of applications do JWT validation and decoding themselves as
+shown in the python examples. That is a fine and useful thing to do
+and can also be combined with validating the JWT in NGINX as well.
 
 A few reasons why you might want to do JWT validation in the web
 server instead of or in addition to the application include:

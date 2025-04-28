@@ -12,4 +12,4 @@ jobs:
    steps:
      - uses: actions/checkout@v2
      - name: Run test via makefile
-       run: make test
+       run: pip install -e . && make test
