@@ -18,17 +18,25 @@
 #+TITLE: Tips, Tricks, and Reasons for JSON Web Tokens (JWTs)
 #+AUTHOR: Emin Martinian
 
+#+COMMENT: THe following setup is needed for the highlighting
+#+COMMENT: in the custom_highlight.js file to work. See comments
+#+COMMENT: there and uses of `highlightSlide` below for usage.
 #+BEGIN_EXPORT html
 <script>
-// Setup patternMap dict so we can add to it later.
-if (typeof patternMap === 'undefined') {
-  var patternMap = {};
+// Setup highlightLineMapper and highlightSlide function
+
+if (typeof highlightLineMapper === 'undefined') {
+  var highlightLineMapper = {};
+}
+
+function highlightSlide(sectionId, lines) {
+  highlightLineMapper[sectionId] = new Set(lines)
 }
 </script>
 #+END_EXPORT
 
 
-* Macro Example
+* Macro Example :noexport:
 
 This example defines a code block called =example-code-block= and then
 uses noweb syntax to reference it in later slides and the next with
@@ -44,7 +52,7 @@ def support_urgent():
     ... # process ending support request
 #+END_SRC
 
-* Macro Example
+* Macro Example :noexport:
 
 - First reference
 
@@ -53,7 +61,7 @@ def support_urgent():
 <<example-code-block>>
 #+END_SRC
 
-* Reusing macro 
+* Reusing macro  :noexport:
   :PROPERTIES:
   :CUSTOM_ID:       reusing-macro
   :END:
@@ -61,7 +69,7 @@ def support_urgent():
 - Second reference with highlight
 
 #+COMMENT: setup highlighting
-#+html: <script>patternMap['slide-reusing-macro'] = 'decorator';</script>
+#+html: <script>highlightSlide('slide-reusing-macro', [1,2]);</script>
 
 
 #+BEGIN_SRC python :noweb yes :exports code
@@ -499,22 +507,13 @@ Decoded Payload from JWT:
   :CUSTOM_ID:       python-flask-example
   :END:
 
-#+BEGIN_EXPORT html
-<script>
-
-if (typeof patternMap === 'undefined') {
-  var patternMap = {};
-}
-patternMap['slide-python-flask-example'] = 'decorator';
-</script>
-#+END_EXPORT
-
 - Easy to verify/decode using libraries (e.g., =pyjwt=)
   - can compose checks using decorators:
 
-#+html: <script>my_pattern = 'custom decorator';</script>
-
-#+BEGIN_SRC python
+#+COMMENT: Define a named source block so we can reuse it
+#+COMMENT: later using noweb.
+#+name: example-flask-route 
+#+BEGIN_SRC python :exports code
 @app.route('/support/urgent')  # built-in flask decorator
 @requires_jwt                  # custom decorator to validate JWT
 @jwt_claims(['paid_support'])  # ensures token is for premium user
@@ -522,6 +521,67 @@ patternMap['slide-python-flask-example'] = 'decorator';
 def support_urgent():
     ... # process ending support request
 #+END_SRC
+
+* Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example-h-1
+  :END:
+
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
+
+#+COMMENT: Indicate that we want to highlight line 1 in the slide with
+#+COMMENT: the given sectionId (based on CUSTOM_ID org property of slide).
+#+html: <script>highlightSlide('slide-python-flask-example-h-1', [1])</script>
+
+#+COMMENT: Now reproduce the previous defined source block using
+#+COMMENT: noweb syntax so we have an exact copy but with highlighting.
+#+BEGIN_SRC python :noweb yes :exports code
+<<example-flask-route>>
+#+END_SRC
+
+* Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example-h-2
+  :END:
+
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
+
+#+html: <script>highlightSlide('slide-python-flask-example-h-2', [2])</script>
+
+#+BEGIN_SRC python :noweb yes :exports code
+<<example-flask-route>>
+#+END_SRC
+
+* Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example-h-3
+  :END:
+
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
+
+#+html: <script>highlightSlide('slide-python-flask-example-h-3', [3])</script>
+
+#+BEGIN_SRC python :noweb yes :exports code
+<<example-flask-route>>
+#+END_SRC
+
+* Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example-h-4
+  :END:
+
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
+
+#+html: <script>highlightSlide('slide-python-flask-example-h-4', [4])</script>
+
+#+BEGIN_SRC python :noweb yes :exports code
+<<example-flask-route>>
+#+END_SRC
+
 
 ** Starting Flask
 
