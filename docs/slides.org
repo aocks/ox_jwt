@@ -4,6 +4,11 @@
 #+COMMENT: using num:nil prevents slide titles being numbered
 #+OPTIONS: timestamp:nil num:nil toc:nil ^:{}
 
+#+COMMENT: For generating presentation slides, we do not want to 
+#+COMMENT: export CodeTool slides. But for archived slides, we
+#+COMMENT: may want to remove that from EXCLUDE_TAGS to include it.
+#+EXCLUDE_TAGS: noexport CodeTool
+
 #+REVEAL_REVEAL_JS_VERSION: 4
 #+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
 #+REVEAL_PLUGINS: (notes)
@@ -407,7 +412,7 @@ MC4CAQAwBQYDK2VwBCIEIC+D6rD2YbXtV0ccR3smoR0ynhVuyyqvplFLbQWDdAtn
 #+COMMENT: May want to set sub-nodes (with **) below to :noexport:
 #+COMMENT: to simplify navigation when doing presentation
 
-** Secret Key
+** Secret Key   :CodeTool:
 
 #+BEGIN_NOTES
 - We use EdDSA because it is secure, short, and deterministic.
@@ -436,7 +441,7 @@ secret_key = (  # We hard code secret key so you can verify results
 #+RESULTS: create-keys
 
 
-** Public Key
+** Public Key   :CodeTool:
 
 #+name: get-public-key
 #+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
@@ -461,7 +466,7 @@ print(public_key)
 
 
 
-** Encoding Example JWT
+** Encoding Example JWT    :CodeTool:
 
 #+NAME: encoded-jwt
 #+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
@@ -483,7 +488,7 @@ Encoded JWT:
 :   .SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-
 :   LL5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
 
-** Decoding Example JWT
+** Decoding Example JWT    :CodeTool:
 
 #+NAME: decoded-jwt
 #+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
@@ -583,7 +588,7 @@ def support_urgent():
 #+END_SRC
 
 
-** Starting Flask
+** Starting Flask    :CodeTool:
 
 #+name: start-flask
 #+BEGIN_SRC python :session jwt_example :exports code :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -623,7 +628,7 @@ def requires_jwt(func):
     return decorated
 #+END_SRC
 
-** Ensure Valid Token
+** Ensure Valid Token  :CodeTool:
 
 #+name: ensure-valid-token
 #+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -670,7 +675,7 @@ def jwt_claims(claims_list: typing.Sequence[str]):
     return make_decorator
 #+END_SRC
 
-** Ensure Claims (Bad Token)
+** Ensure Claims (Bad Token)  :CodeTool:
 
 #+name: ensure-valid-claims-bad-token
 #+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -688,7 +693,7 @@ print(f'Bad token response:\n  code: {req.status_code}\n'
 :   code: 401
 :   text: Missing claims: ['premium_user']
 
-** Ensure Claims (Bad Claims)
+** Ensure Claims (Bad Claims)   :CodeTool:
 
 #+name: ensure-valid-claims-bad-claim
 #+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -708,7 +713,7 @@ print(f'Premium token response:\n  code: {req.status_code}\n'
 :   code: 401
 :   text: Token age 20193 days, 17:37:05.670865 not within 0:00:30
 
-** Ensure Claims (Success)
+** Ensure Claims (Success)   :CodeTool:
 
 #+name: ensure-valid-claims-good
 #+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -777,7 +782,7 @@ def issue():
     return msg
 #+END_SRC
 
-** Python demo
+** Python demo    :CodeTool:
 #+name: proxy-example
 #+BEGIN_SRC python :session jwt_example :results output :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
 

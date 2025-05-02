@@ -33,8 +33,8 @@ function highlightSlide(sectionId, lines) {
 }
 </script>
 <section>
-<section id="slide-orgd8df956">
-<h2 id="orgd8df956">JWT: JSON Web Token</h2>
+<section id="slide-orgea8828b">
+<h2 id="orgea8828b">JWT: JSON Web Token</h2>
 <p>
 Used for authentication/authorization such as:
 </p>
@@ -59,8 +59,8 @@ Used for authentication/authorization such as:
 </section>
 </section>
 <section>
-<section id="slide-org9fa4d3c">
-<h2 id="org9fa4d3c">Why JWTs?</h2>
+<section id="slide-org96f75b8">
+<h2 id="org96f75b8">Why JWTs?</h2>
 <p>
 Imagine app with many features + servers + engineers:
 </p>
@@ -78,8 +78,8 @@ Imagine app with many features + servers + engineers:
 </section>
 </section>
 <section>
-<section id="slide-org7317986">
-<h2 id="org7317986">Authentication vs Validation</h2>
+<section id="slide-org4e90170">
+<h2 id="org4e90170">Authentication vs Validation</h2>
 <aside class="notes">
 <ul>
 <li>Auth server manages passwords, takes credit cards, etc.</li>
@@ -91,15 +91,15 @@ Imagine app with many features + servers + engineers:
 </aside>
 
 
-<div id="org2238a61" class="figure">
+<div id="org3d755a8" class="figure">
 <p><img src="images/jwt-auth-vs-app-start.jpg" alt="jwt-auth-vs-app-start.jpg" width="90%" />
 </p>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-org2057dc1">
-<h2 id="org2057dc1">JWT: Authentication Request</h2>
+<section id="slide-org040c9df">
+<h2 id="org040c9df">JWT: Authentication Request</h2>
 <aside class="notes">
 <p>
 Managing the authentication server is more complicated.
@@ -114,25 +114,25 @@ Managing the authentication server is more complicated.
 
 
 
-<div id="org378978c" class="figure">
+<div id="org654e1fe" class="figure">
 <p><img src="images/jwt-auth-vs-app-auth.jpg" alt="jwt-auth-vs-app-auth.jpg" width="90%" />
 </p>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-org382abb5">
-<h2 id="org382abb5">JWT: Authentication Response</h2>
+<section id="slide-org9ebd8f8">
+<h2 id="org9ebd8f8">JWT: Authentication Response</h2>
 
-<div id="org0976506" class="figure">
+<div id="org9fa6bcd" class="figure">
 <p><img src="images/jwt-auth-vs-app-auth-response.jpg" alt="jwt-auth-vs-app-auth-response.jpg" width="90%" />
 </p>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-orga232628">
-<h2 id="orga232628">JWT: Application Request</h2>
+<section id="slide-org79a90e0">
+<h2 id="org79a90e0">JWT: Application Request</h2>
 <aside class="notes">
 <ul>
 <li>App Server validates JWT with public key (lower security needs)</li>
@@ -144,15 +144,15 @@ Managing the authentication server is more complicated.
 </aside>
 
 
-<div id="orgf74474f" class="figure">
+<div id="org32b3a3c" class="figure">
 <p><img src="images/jwt-auth-vs-app-request-app.jpg" alt="jwt-auth-vs-app-request-app.jpg" width="90%" />
 </p>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-org150a8aa">
-<h2 id="org150a8aa">Separate Auth From Validation</h2>
+<section id="slide-org0b3f889">
+<h2 id="org0b3f889">Separate Auth From Validation</h2>
 <p>
 Auth Server has <b><b>secrets</b></b>; needs <b><b>security</b></b> + maintenance
 </p>
@@ -166,8 +166,8 @@ Auth Server has <b><b>secrets</b></b>; needs <b><b>security</b></b> + maintenanc
 </section>
 </section>
 <section>
-<section id="slide-orgb550649">
-<h2 id="orgb550649">What do JWTs look like?</h2>
+<section id="slide-org0070ee9">
+<h2 id="org0070ee9">What do JWTs look like?</h2>
 <p>
 Base64 encoded header.payload.signature:
 </p>
@@ -226,108 +226,10 @@ Signed using EdDSA with secret key:
 
 </aside>
 </section>
-<section id="slide-orgac46908">
-<h3 id="orgac46908">Secret Key</h3>
-<aside class="notes">
-<ul>
-<li>We use EdDSA because it is secure, short, and deterministic.</li>
-<li>You could use ESA256, but beware that uses a nonce and is non-deterministic.</li>
-
-</ul>
-
-</aside>
-
-<div class="org-src-container">
-
-<pre  class="src src-python" id="create-keys"  ><code trim><span style="color: #a020f0;">import</span> base64, jwt  <span style="color: #b22222;">#  </span><span style="color: #b22222;">pip install 'pyjwt[crypto]'</span>
-<span style="color: #a020f0;">from</span> cryptography.hazmat.primitives.asymmetric <span style="color: #a020f0;">import</span> ed25519
-<span style="color: #a020f0;">from</span> cryptography.hazmat.primitives <span style="color: #a020f0;">import</span> serialization
-<span style="color: #a020f0;">from</span> cryptography.hazmat.backends <span style="color: #a020f0;">import</span> default_backend
-
-<span style="color: #a0522d;">secret_key</span> = base64.b64encode(  <span style="color: #b22222;"># </span><span style="color: #b22222;">How to generate new key</span>
-    ed25519.Ed25519PrivateKey.generate().private_bytes(
-        encoding=serialization.Encoding.DER,
-        <span style="color: #483d8b;">format</span>=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption())
-).decode(<span style="color: #8b2252;">'utf8'</span>)
-
-<span style="color: #a0522d;">secret_key</span> = (  <span style="color: #b22222;"># </span><span style="color: #b22222;">We hard code secret key so you can verify results</span>
-    <span style="color: #8b2252;">'MC4CAQAwBQYDK2VwBCIEIC+D6rD2YbXtV0ccR3smoR0ynhVuyyqvplFLbQWDdAtn'</span>
-)
-</code></pre>
-</div>
-</section>
-<section id="slide-orgbadc6a8">
-<h3 id="orgbadc6a8">Public Key</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="get-public-key"  ><code trim><span style="color: #a0522d;">sk</span> = serialization.load_der_private_key(  <span style="color: #b22222;"># </span><span style="color: #b22222;">de-serialize encoded key</span>
-    base64.b64decode(secret_key),backend=default_backend(),
-    password=<span style="color: #008b8b;">None</span>)
-
-<span style="color: #a0522d;">pk</span> = sk.public_key()
-<span style="color: #a0522d;">public_key</span> = pk.public_bytes(  <span style="color: #b22222;"># </span><span style="color: #b22222;">serialize</span>
-    encoding=serialization.Encoding.PEM,
-    <span style="color: #483d8b;">format</span>=serialization.PublicFormat.SubjectPublicKeyInfo
-).decode(<span style="color: #8b2252;">'utf8'</span>)
-                
-<span style="color: #483d8b;">print</span>(public_key)
-</code></pre>
-</div>
-
-
-<pre class="example">
------BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAUVLjZWAVK5ZE1ewI5QBdr0Nig1Qkx3kl5zHIADvw0M8=
------END PUBLIC KEY-----
-</pre>
-</section>
-<section id="slide-orgd7029d8">
-<h3 id="orgd7029d8">Encoding Example JWT</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="encoded-jwt"  ><code trim><span style="color: #a020f0;">import</span> textwrap  <span style="color: #b22222;"># </span><span style="color: #b22222;">just for display</span>
-
-<span style="color: #a0522d;">example_jwt</span> = jwt.encode(
-    headers={<span style="color: #8b2252;">'typ'</span>:<span style="color: #8b2252;">'JWT'</span>, <span style="color: #8b2252;">'alg'</span>:<span style="color: #8b2252;">'EdDSA'</span>},
-    payload={<span style="color: #8b2252;">'sub'</span>: <span style="color: #8b2252;">'a'</span>, <span style="color: #8b2252;">'name'</span>: <span style="color: #8b2252;">'b'</span>, <span style="color: #8b2252;">'iat'</span>: 1},
-    key=sk)  <span style="color: #b22222;"># </span><span style="color: #b22222;">this is the JWT that would be used</span>
-<span style="color: #483d8b;">print</span>(textwrap.indent(textwrap.fill(       <span style="color: #b22222;"># </span><span style="color: #b22222;">format for</span>
-      <span style="color: #8b2252;">'</span><span style="color: #008b8b;">\n</span><span style="color: #8b2252;">.'</span>.join(example_jwt.split(<span style="color: #8b2252;">'.'</span>)),  <span style="color: #b22222;"># </span><span style="color: #b22222;">nice display</span>
-     width=44, replace_whitespace=<span style="color: #008b8b;">False</span>), prefix=<span style="color: #8b2252;">'  '</span>))
-</code></pre>
-</div>
-
-<p>
-Encoded JWT:
-</p>
-<pre class="example">
-eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9
-.eyJzdWIiOiJhIiwibmFtZSI6ImIiLCJpYXQiOjF9
-.SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-
-LL5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
-</pre>
-</section>
-<section id="slide-orga523674">
-<h3 id="orga523674">Decoding Example JWT</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="decoded-jwt"  ><code trim><span style="color: #a0522d;">decoded_jwt</span> = jwt.decode(example_jwt, algorithms=[<span style="color: #8b2252;">'EdDSA'</span>], key=pk)
-<span style="color: #483d8b;">print</span>(decoded_jwt)
-</code></pre>
-</div>
-
-<p>
-Decoded Payload from JWT:
-</p>
-<pre class="example">
-{'sub': 'a', 'name': 'b', 'iat': 1}
-</pre>
-</section>
 </section>
 <section>
-<section id="slide-orga746f1d">
-<h2 id="orga746f1d">Main JWT Fields</h2>
+<section id="slide-org92b6933">
+<h2 id="org92b6933">Main JWT Fields</h2>
 <ul>
 <li><b>sub</b>: Subject (username, email, etc.)</li>
 <li><b>iat</b>: Issued at (useful for checking freshness)</li>
@@ -464,28 +366,10 @@ Decoded Payload from JWT:
 </code></pre>
 </div>
 </section>
-<section id="slide-orge994346">
-<h3 id="orge994346">Starting Flask</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="start-flask"  ><code trim><span style="color: #a020f0;">import</span> os
-<span style="color: #a020f0;">import</span> sys
-<span style="color: #a020f0;">import</span> subprocess
-
-os.chdir(os.path.expanduser(<span style="color: #8b2252;">'~/code/ox_jwt/src/ox_jwt'</span>))
-<span style="color: #a0522d;">my_env</span> = os.environ.copy()
-<span style="color: #a0522d;">my_env</span>[<span style="color: #8b2252;">'FLASK_JWT_KEY'</span>] = public_key.split(<span style="color: #8b2252;">'</span><span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>)[1]
-<span style="color: #a0522d;">my_env</span>[<span style="color: #8b2252;">'FLASK_JWT_ALGS'</span>] = <span style="color: #8b2252;">'EdDSA,ES256'</span>
-<span style="color: #a0522d;">proc</span> = subprocess.Popen([sys.executable, <span style="color: #8b2252;">'app.py'</span>], env=my_env)
-<span style="color: #b22222;"># </span><span style="color: #b22222;">Use proc.kill() to shutdown server</span>
-
-</code></pre>
-</div>
-</section>
 </section>
 <section>
-<section id="slide-org5acced1">
-<h2 id="org5acced1">Example of <code>@requires_jwt</code></h2>
+<section id="slide-orgcc0f516">
+<h2 id="orgcc0f516">Example of <code>@requires_jwt</code></h2>
 <div class="org-src-container">
 
 <pre  class="src src-python"   data-line-numbers='4|5'><code trim><span style="color: #a020f0;">def</span> <span style="color: #0000ff;">requires_jwt</span>(func):
@@ -505,38 +389,10 @@ os.chdir(os.path.expanduser(<span style="color: #8b2252;">'~/code/ox_jwt/src/ox_
 </code></pre>
 </div>
 </section>
-<section id="slide-org943815b">
-<h3 id="org943815b">Ensure Valid Token</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="ensure-valid-token"  ><code trim><span style="color: #a020f0;">import</span> requests
-
-<span style="color: #a0522d;">req</span> = requests.get(<span style="color: #8b2252;">'http://127.0.0.1:5000/hello'</span>, headers={
-    <span style="color: #8b2252;">'Authorization'</span>: f<span style="color: #8b2252;">'Bearer </span>{example_jwt}<span style="color: #8b2252;">mybad'</span>})  <span style="color: #b22222;"># </span><span style="color: #b22222;">bad token</span>
-<span style="color: #483d8b;">print</span>(f<span style="color: #8b2252;">'Bad token response:</span><span style="color: #008b8b;">\n</span><span style="color: #8b2252;">  code: </span>{req.status_code}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>
-      f<span style="color: #8b2252;">'  text: </span>{req.text}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>)
-
-<span style="color: #a0522d;">req</span> = requests.get(<span style="color: #8b2252;">'http://127.0.0.1:5000/hello'</span>, headers={
-    <span style="color: #8b2252;">'Authorization'</span>: f<span style="color: #8b2252;">'Bearer </span>{example_jwt}<span style="color: #8b2252;">'</span>})
-<span style="color: #483d8b;">print</span>(f<span style="color: #8b2252;">'Good token response:</span><span style="color: #008b8b;">\n</span><span style="color: #8b2252;">  code: </span>{req.status_code}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>
-      f<span style="color: #8b2252;">'  text: </span>{req.text}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>)
-</code></pre>
-</div>
-
-<pre class="example">
-Bad token response:
-  code: 401
-  text: problem=InvalidSignatureError('Signature verification failed')
-
-Good token response:
-  code: 200
-  text: Hello World!
-</pre>
-</section>
 </section>
 <section>
-<section id="slide-orge8e4a15">
-<h2 id="orge8e4a15">Example of <code>@jwt_claims</code></h2>
+<section id="slide-orgc6261b4">
+<h2 id="orgc6261b4">Example of <code>@jwt_claims</code></h2>
 <div class="org-src-container">
 
 <pre  class="src src-python"   ><code trim><span style="color: #a020f0;">def</span> <span style="color: #0000ff;">jwt_claims</span>(claims_list: typing.Sequence[<span style="color: #483d8b;">str</span>]):
@@ -553,74 +409,10 @@ Good token response:
 </code></pre>
 </div>
 </section>
-<section id="slide-org6319d10">
-<h3 id="org6319d10">Ensure Claims (Bad Token)</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="ensure-valid-claims-bad-token"  ><code trim><span style="color: #a020f0;">import</span> datetime, requests
-
-<span style="color: #a0522d;">req</span> = requests.get(<span style="color: #8b2252;">'http://127.0.0.1:5000/support/urgent'</span>, headers={
-    <span style="color: #8b2252;">'Authorization'</span>: f<span style="color: #8b2252;">'Bearer </span>{example_jwt}<span style="color: #8b2252;">'</span>})  <span style="color: #b22222;"># </span><span style="color: #b22222;">bad token</span>
-
-<span style="color: #483d8b;">print</span>(f<span style="color: #8b2252;">'Bad token response:</span><span style="color: #008b8b;">\n</span><span style="color: #8b2252;">  code: </span>{req.status_code}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>
-      f<span style="color: #8b2252;">'  text: </span>{req.text}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>)
-</code></pre>
-</div>
-
-<pre class="example">
-Bad token response:
-  code: 401
-  text: Missing claims: ['premium_user']
-</pre>
-</section>
-<section id="slide-org182d61a">
-<h3 id="org182d61a">Ensure Claims (Bad Claims)</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="ensure-valid-claims-bad-claim"  ><code trim>
-<span style="color: #a0522d;">premium_jwt</span> = jwt.encode(headers={<span style="color: #8b2252;">'typ'</span>:<span style="color: #8b2252;">'JWT'</span>, <span style="color: #8b2252;">'alg'</span>:<span style="color: #8b2252;">'EdDSA'</span>},
-    payload={<span style="color: #8b2252;">'sub'</span>: <span style="color: #8b2252;">'a'</span>, <span style="color: #8b2252;">'premium_user'</span>: <span style="color: #8b2252;">'b'</span>, <span style="color: #8b2252;">'iat'</span>: 1}, key=sk)
-
-<span style="color: #a0522d;">req</span> = requests.get(<span style="color: #8b2252;">'http://127.0.0.1:5000/support/urgent'</span>, headers={
-    <span style="color: #8b2252;">'Authorization'</span>: f<span style="color: #8b2252;">'Bearer </span>{premium_jwt}<span style="color: #8b2252;">'</span>})
-
-<span style="color: #483d8b;">print</span>(f<span style="color: #8b2252;">'Premium token response:</span><span style="color: #008b8b;">\n</span><span style="color: #8b2252;">  code: </span>{req.status_code}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>
-      f<span style="color: #8b2252;">'  text: </span>{req.text}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>)
-</code></pre>
-</div>
-
-<pre class="example">
-Premium token response:
-  code: 401
-  text: Token age 20193 days, 17:37:05.670865 not within 0:00:30
-</pre>
-</section>
-<section id="slide-org7235673">
-<h3 id="org7235673">Ensure Claims (Success)</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="ensure-valid-claims-good"  ><code trim><span style="color: #a0522d;">now</span> = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-<span style="color: #a0522d;">recent_premium_jwt</span> = jwt.encode(headers={<span style="color: #8b2252;">'typ'</span>:<span style="color: #8b2252;">'JWT'</span>, <span style="color: #8b2252;">'alg'</span>:<span style="color: #8b2252;">'EdDSA'</span>},
-    payload={<span style="color: #8b2252;">'sub'</span>: <span style="color: #8b2252;">'a'</span>, <span style="color: #8b2252;">'premium_user'</span>: <span style="color: #8b2252;">'b'</span>, <span style="color: #8b2252;">'iat'</span>: <span style="color: #483d8b;">int</span>(now)}, key=sk)
-
-<span style="color: #a0522d;">req</span> = requests.get(<span style="color: #8b2252;">'http://127.0.0.1:5000/support/urgent'</span>, headers={
-    <span style="color: #8b2252;">'Authorization'</span>: f<span style="color: #8b2252;">'Bearer </span>{recent_premium_jwt}<span style="color: #8b2252;">'</span>})
-
-<span style="color: #483d8b;">print</span>(f<span style="color: #8b2252;">'Recent premium token response:</span><span style="color: #008b8b;">\n</span><span style="color: #8b2252;">  code: </span>{req.status_code}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>
-      f<span style="color: #8b2252;">'  text: </span>{req.text}<span style="color: #008b8b;">\n</span><span style="color: #8b2252;">'</span>)
-</code></pre>
-</div>
-
-<pre class="example">
-Recent premium token response:
-  code: 200
-  text: processing support request for user b
-</pre>
-</section>
 </section>
 <section>
-<section id="slide-org09b73eb">
-<h2 id="org09b73eb">Example Use Case: Proxy</h2>
+<section id="slide-org5bde91d">
+<h2 id="org5bde91d">Example Use Case: Proxy</h2>
 <ul>
 <li>Auth Server grants JWT letting Alice to act for Bob</li>
 <li class="fragment appear">claims: <code>{"sub": "Alice", "proxy": "Bob"}</code></li>
@@ -630,8 +422,8 @@ Recent premium token response:
 </section>
 </section>
 <section>
-<section id="slide-orge8abcac">
-<h2 id="orge8abcac">Example Use Case: Proxy</h2>
+<section id="slide-org0d83c3a">
+<h2 id="org0d83c3a">Example Use Case: Proxy</h2>
 <ul>
 <li>Auth Server grants JWT letting Alice to act for Bob</li>
 <li>claims: <code>{"sub": "Alice", "proxy": "Bob"}</code></li>
@@ -657,8 +449,8 @@ Recent premium token response:
 </section>
 </section>
 <section>
-<section id="slide-orgfe9dff2">
-<h2 id="orgfe9dff2">Example Use Case: Proxy</h2>
+<section id="slide-orge3c36da">
+<h2 id="orge3c36da">Example Use Case: Proxy</h2>
 <ul>
 <li>Auth Server grants JWT letting Alice to act for Bob</li>
 <li>claims: <code>{"sub": "Alice", "proxy": "Bob"}</code></li>
@@ -682,32 +474,10 @@ Recent premium token response:
 </code></pre>
 </div>
 </section>
-<section id="slide-org77d0be3">
-<h3 id="org77d0be3">Python demo</h3>
-<div class="org-src-container">
-
-<pre  class="src src-python" id="proxy-example"  ><code trim>
-<span style="color: #a0522d;">now</span> = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-<span style="color: #a0522d;">proxy_example_jwt</span> = jwt.encode(headers={<span style="color: #8b2252;">'typ'</span>:<span style="color: #8b2252;">'JWT'</span>, <span style="color: #8b2252;">'alg'</span>:<span style="color: #8b2252;">'EdDSA'</span>},
-    payload={<span style="color: #8b2252;">'sub'</span>: <span style="color: #8b2252;">'Alice'</span>, <span style="color: #8b2252;">'proxy'</span>: <span style="color: #8b2252;">'Bob'</span>}, key=sk)
-
-<span style="color: #a0522d;">req</span> = requests.get(<span style="color: #8b2252;">'http://127.0.0.1:5000/issue'</span>, headers={
-    <span style="color: #8b2252;">'Authorization'</span>: f<span style="color: #8b2252;">'Bearer </span>{proxy_example_jwt}<span style="color: #8b2252;">'</span>})
-<span style="color: #483d8b;">print</span>(req.text)
-
-</code></pre>
-</div>
-
-<pre class="example">
-127.0.0.1 - - [24/Apr/2025 13:25:28] "GET /issue HTTP/1.1" 200 -
-Created issue assigned to Bob.
-Alice acted on behalf of Bob
-</pre>
-</section>
 </section>
 <section>
-<section id="slide-org8a62200">
-<h2 id="org8a62200">Caveats</h2>
+<section id="slide-org8240d9c">
+<h2 id="org8240d9c">Caveats</h2>
 <ul>
 <li class="fragment appear">Beware using header fields to check signature
 <ul>
@@ -729,8 +499,8 @@ Alice acted on behalf of Bob
 </section>
 </section>
 <section>
-<section id="slide-org7bc6af6">
-<h2 id="org7bc6af6">Example JKU Header Attack</h2>
+<section id="slide-orge2ca101">
+<h2 id="orge2ca101">Example JKU Header Attack</h2>
 <ul>
 <li>Header can provide URL for key (useful):
 <ul>
@@ -748,8 +518,8 @@ Alice acted on behalf of Bob
 </section>
 </section>
 <section>
-<section id="slide-orgfee8d6f">
-<h2 id="orgfee8d6f">Example ALG Header Attack</h2>
+<section id="slide-orge1441c0">
+<h2 id="orge1441c0">Example ALG Header Attack</h2>
 <ul>
 <li>Header can provide URL for key (useful):
 <ul>
@@ -767,8 +537,8 @@ Alice acted on behalf of Bob
 </section>
 </section>
 <section>
-<section id="slide-org7fa2853">
-<h2 id="org7fa2853">Revocation via Access/Refresh</h2>
+<section id="slide-org74c7e54">
+<h2 id="org74c7e54">Revocation via Access/Refresh</h2>
 <ul>
 <li>Problem: Can't cancel or logout a JWT</li>
 <li class="fragment appear">Solution: Refresh/Access token
@@ -793,48 +563,48 @@ server will invalidate refresh token + require new credential check.
 </section>
 </section>
 <section>
-<section id="slide-org0c7cfd0">
-<h2 id="org0c7cfd0">Get Refresh Token</h2>
+<section id="slide-org39ba30c">
+<h2 id="org39ba30c">Get Refresh Token</h2>
 
-<div id="orgddf455d" class="figure">
+<div id="org8f876eb" class="figure">
 <p><img src="images/jwt-get-refresh.jpg" alt="jwt-get-refresh.jpg" width="90%" />
 </p>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-org87d0600">
-<h2 id="org87d0600">Get Access Token</h2>
+<section id="slide-orgd584513">
+<h2 id="orgd584513">Get Access Token</h2>
 
-<div id="orgd2cf230" class="figure">
+<div id="org968301b" class="figure">
 <p><img src="images/jwt-get-access.jpg" alt="jwt-get-access.jpg" width="90%" />
 </p>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-orge997daf">
-<h2 id="orge997daf">Use Access Token</h2>
+<section id="slide-org15ecf49">
+<h2 id="org15ecf49">Use Access Token</h2>
 
-<div id="org4bf176f" class="figure">
+<div id="org0ee675f" class="figure">
 <p><img src="images/jwt-use-access.jpg" alt="jwt-use-access.jpg" width="90%" />
 </p>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-org9111d3f">
-<h2 id="org9111d3f">Revocation</h2>
+<section id="slide-org7949f4f">
+<h2 id="org7949f4f">Revocation</h2>
 
-<div id="org57f3732" class="figure">
+<div id="org11a362f" class="figure">
 <p><img src="images/jwt-revoke.jpg" alt="jwt-revoke.jpg" width="90%" />
 </p>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-orgc165d54">
-<h2 id="orgc165d54">Separate validation from parsing</h2>
+<section id="slide-org3859c25">
+<h2 id="org3859c25">Separate validation from parsing</h2>
 <aside class="notes">
 <p>
 We can go one step beyond separating authentication from validation
@@ -854,7 +624,7 @@ and separate validation from parsing.
 e.g., NGINX can verify before passing to app server
 </p>
 
-<div id="orgaaa4f96" class="figure">
+<div id="orgdfa56f5" class="figure">
 <p><img src="images/nginx-example.jpg" alt="nginx-example.jpg" />
 </p>
 </div></li>
@@ -864,8 +634,8 @@ e.g., NGINX can verify before passing to app server
 </section>
 </section>
 <section>
-<section id="slide-org5316b62">
-<h2 id="org5316b62">Summary and next steps</h2>
+<section id="slide-orgf0e0763">
+<h2 id="orgf0e0763">Summary and next steps</h2>
 <aside class="notes">
 <p>
 If you are writing a small application, you can quickly and easily put
