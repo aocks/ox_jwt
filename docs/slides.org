@@ -1,48 +1,148 @@
 
 
+
 #+COMMENT: using timestamp:nil suppresses "created at" in title
 #+COMMENT: using num:nil prevents slide titles being numbered
-#+OPTIONS: timestamp:nil num:nil toc:nil ^:{}
+#+OPTIONS: timestamp:nil num:nil toc:nil ^:{} reveal_single_file:t
+
+#+COMMENT: For generating presentation slides, we do not want to 
+#+COMMENT: export CodeTool slides. But for archived slides, we
+#+COMMENT: may want to remove that from EXCLUDE_TAGS to include it.
+#+EXCLUDE_TAGS: noexport CodeTool
 
 #+REVEAL_REVEAL_JS_VERSION: 4
-#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
+#+COMMENT: #+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
+#+REVEAL_ROOT: reveal
 #+REVEAL_PLUGINS: (notes)
 #+REVEAL_THEME: solarized
-#+REVEAL_INIT_OPTIONS: fragments:true, transition:'fade'
+#+REVEAL_INIT_OPTIONS: fragments:true, transition:'fade', margin: 0.0001, width:'100%'
 
+#+REVEAL_EXTRA_SCRIPT_SRC: custom_highlight.js
+#+REVEAL_EXTRA_CSS: custom.css
 
 #+COMMENT: Use `s` to engage speaker mode
 
 #+TITLE: Tips, Tricks, and Reasons for JSON Web Tokens (JWTs)
 #+AUTHOR: Emin Martinian
 
+#+COMMENT: THe following setup is needed for the highlighting
+#+COMMENT: in the custom_highlight.js file to work. See comments
+#+COMMENT: there and uses of `highlightSlide` below for usage.
+#+BEGIN_EXPORT html
+<script>
+// Setup highlightLineMapper and highlightSlide function
 
-* Basic Setup :noexport:
+if (typeof highlightLineMapper === 'undefined') {
+  var highlightLineMapper = {};
+}
 
-#+BEGIN_SRC emacs-lisp :exports none
-(require 'ox-reveal)
+function highlightSlide(sectionId, lines) {
+  highlightLineMapper[sectionId] = new Set(lines)
+}
+</script>
+#+END_EXPORT
 
-;; Make sure to use version 4.0 and set REVEAL_REVEAL_JS_VERSION below
-(setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/")
-(setq org-reveal-plugins '(notes))
-(setq org-export-babel-evaluate 't)
+
+* Macro Example :noexport:
+
+This example defines a code block called =example-code-block= and then
+uses noweb syntax to reference it in later slides and the next with
+slight tweaks.
+
+#+name: example-code-block
+#+BEGIN_SRC python :exports none :results value
+@app.route('/support/urgent')  # built-in flask decorator
+@requires_jwt                  # custom decorator to validate JWT
+@jwt_claims(['paid_support'])  # ensures token is for premium user
+@jwt_iat(datetime.timedelta(hours=24))  # ensure recent token
+def support_urgent():
+    ... # process ending support request
 #+END_SRC
 
-#+RESULTS:
-: t
+* Macro Example :noexport:
 
+- First reference
 
-* Code Fragment Example :noexport:
-
-#+BEGIN_SRC python
-print("This appears immediately")
+#+BEGIN_SRC python :noweb yes :exports code
+# here it is
+<<example-code-block>>
 #+END_SRC
 
-#+ATTR_REVEAL: :frag appear
-#+BEGIN_SRC python
-print("This appears after clicking")
+* Reusing macro  :noexport:
+  :PROPERTIES:
+  :CUSTOM_ID:       reusing-macro
+  :END:
+
+- Second reference with highlight
+
+#+COMMENT: setup highlighting
+#+html: <script>highlightSlide('slide-reusing-macro', [1,2]);</script>
+
+
+#+BEGIN_SRC python :noweb yes :exports code
+# another version
+<<example-code-block>>
 #+END_SRC
 
+
+
+* Fancy Fragment :noexport:
+
+#+MACRO:  fb @@html: <div class="fragment" data-fragment-index="$1">@@
+#+MACRO:  fe @@html: </div>@@
+
+{{{fb(1)}}}
+   - Point A
+#+begin_src 
+Code for point A
+#+end_src
+{{{fe}}}
+{{{fb(2)}}}
+   - Point B
+#+begin_src 
+Code for point B
+#+end_src
+{{{fe}}}
+{{{fb(3)}}}
+   - Point C
+#+begin_src bash
+Code for point C
+#+end_src
+{{{fe}}}
+
+* Fancy Table  :noexport:
+
+| @@html: <div class="fragment" data-fragment-index="0"> A  </div>@@ | @@html: <div class="fragment" data-fragment-index="3"> B  </div>@@ |
+|--------------------------------------------------------------------+---|
+| @@html: <div class="fragment" data-fragment-index="1"> C  </div>@@ | @@html: <div class="fragment" data-fragment-index="2"> D  </div>@@ |
+
+* Embedded graphviz    :noexport:
+
+Could use graphviz online at https://rsms.me/graphviz/ to visualize
+the diagram as you are create it or below to generate it using
+javascript. Harder to manage width in org-reveal, so we just stick to
+locally generated images.
+
+#+begin_export html
+<script src="https://rsms.me/graphviz/graphviz.js"></script>
+<script>
+graphviz.layout(`
+digraph {
+  Hello -> World
+  Hej -> Hello
+  Värld -> World -> Hej
+}
+`).then(svg => {
+  document.getElementById("foo").innerHTML = svg;
+})
+</script>
+<div id="foo" style="width: 100%; overflow-x: auto;"></div>
+#+END_export
+
+* Mermaid.js   :noexport:
+
+Could also use mermaid.js (and [[https://www.mermaidchart.com/play][online editor]]) to create + embed
+diagram. Pretty cool, but more limited layout options than graphviz.
 
 * JWT: JSON Web Token
 
@@ -70,38 +170,37 @@ Imagine app with many features + servers + engineers:
   - Can't give everyone access to sensitive info
 
 
-* JWT Architecture
+* Authentication vs Validation
 #+BEGIN_NOTES
 - Auth server manages passwords, takes credit cards, etc.
 - Must be secure and in sync; hard to load balance
 - Cannot let just any employee have access
 #+END_NOTES
 
-Separate authentication from validation/application:
-- Authentication requires secret keys (high security)
-- Validation can use public key (less security)
-- Easier to manage secrets, keys, load, sync, etc.
-
 #+name: jwt-auth-vs-app-start
 #+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-start.jpg :eval never-export
-
 digraph auth_system {
+    node [fontsize="30"];
+    edge [fontsize="30"];
+
     // Define subgraphs
     subgraph top {
         rank=same;
-        AuthServer [label="Auth Server", shape=box];
-        hidden [style=invis];
+        AuthServer [label="Auth Server\n", shape=box];
+	hidden [style=invis];
         AppServer [label="App Server(s)", shape=box];
     }
-
     subgraph bottom {
         rank=same;
         Client [label="Client", shape=box];
     }
 
+    AuthServer -> hidden [color=none,xlabel="\nAuthentication requires\nsecret keys (high security)",fontsize="20"];
+    AppServer -> hidden [color=none,xlabel="\nValidation can use\n public key (less security)",fontsize="20"];
+
     // Define connections
     AuthServer -> Client [label="JWT", constraint=false, splines=ortho, style=invis];
-    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth\nor credit card)", constraint=false, splines=ortho, style=invis];
+    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth or\ncredit card)", constraint=false, splines=ortho,style=invis];
     Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho,style=invis];
 
     // Define hidden edges to force layout
@@ -112,9 +211,9 @@ digraph auth_system {
 
 #+end_src
 
+#+ATTR_HTML: :width 90%
 #+RESULTS: jwt-auth-vs-app-start
 [[file:images/jwt-auth-vs-app-start.jpg]]
-
 
 * JWT: Authentication Request
 
@@ -125,19 +224,12 @@ Managing the authentication server is more complicated.
 #+END_NOTES
 
 
-Client authenticates to server:
-
-#+ATTR_REVEAL: :frag (appear appear)
-- Auth server must be secure
-- Payment or Login with username/password/MFA
-- May require database check, locks, other slow ops
-
-
-
 #+name: jwt-auth-vs-app-auth
 #+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth.jpg :eval never-export
 
 digraph auth_system {
+    node [fontsize="30"];
+    edge [fontsize="30"];
     // Define subgraphs
     subgraph top {
         rank=same;
@@ -164,23 +256,20 @@ digraph auth_system {
 
 #+end_src
 
+#+ATTR_HTML: :width 90%
 #+RESULTS: jwt-auth-vs-app-auth
 [[file:images/jwt-auth-vs-app-auth.jpg]]
 
 
 * JWT: Authentication Response
 
-Server responds with JWT:
-
-#+ATTR_REVEAL: :frag (appear appear)
-- header describing JWT
-- claims describing info/rights (iat, nbf, exp, etc.)
-- signature from Auth Server
-
 #+name: jwt-auth-vs-app-auth-response
 #+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-auth-response.jpg :eval never-export
 
 digraph auth_system {
+    node [fontsize="30"];
+    edge [fontsize="30"];
+
     // Define subgraphs
     subgraph top {
         rank=same;
@@ -194,9 +283,12 @@ digraph auth_system {
         Client [label="Client", shape=box];
     }
 
+    AppServer -> hidden [style=invis];
+
     // Define connections
+    Client -> AuthServer [label="  JWT contains:\nheader\nclaims\nsignature", color=none,constraint=false, splines=ortho];
     AuthServer -> Client [label="JWT", constraint=false, splines=ortho];
-    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
+//    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
     Client -> AppServer [label="Request Service\nusing JWT", constraint=false, splines=ortho,style=invis];
 
     // Define hidden edges to force layout
@@ -207,6 +299,7 @@ digraph auth_system {
 
 #+end_src
 
+#+ATTR_HTML: :width 90%
 #+RESULTS: jwt-auth-vs-app-auth-response
 [[file:images/jwt-auth-vs-app-auth-response.jpg]]
 
@@ -214,26 +307,20 @@ digraph auth_system {
 * JWT: Application Request
 
 #+BEGIN_NOTES
-- Distributed Trust
-- App Server(s) can be load balanced or serverless
-- App Server(s) can be maintained with lower security requirements
-#+END_NOTES
-
-
-Client sends JWT to App Server:
-
-#+ATTR_REVEAL: :frag (appear appear)
-- App Server validates JWT with public key
+- App Server validates JWT with public key (lower security needs)
 - No DB/state/sync/update; can be serverless
 - Checks JWT for rights + provides service
 
 
-
+#+END_NOTES
 
 #+name: jwt-auth-vs-app-request-app
 #+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-request-app.jpg :eval never-export
 
 digraph auth_system {
+    node [fontsize="30"];
+    edge [fontsize="30"];
+
     // Define subgraphs
     subgraph top {
         rank=same;
@@ -248,8 +335,8 @@ digraph auth_system {
     }
 
     // Define connections
-    AuthServer -> Client [label="JWT", constraint=false, splines=ortho,style=invis];
-    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
+    Client -> AuthServer [label="App Server\nvalidates\nJWT with\npublic key", color=none,constraint=false, splines=ortho];
+//    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
     Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho];
 
     // Define hidden edges to force layout
@@ -260,6 +347,7 @@ digraph auth_system {
 
 #+end_src
 
+#+ATTR_HTML: :width 90%
 #+RESULTS: jwt-auth-vs-app-request-app
 [[file:images/jwt-auth-vs-app-request-app.jpg]]
 
@@ -275,42 +363,6 @@ Auth Server has **secrets**; needs **security** + maintenance
 - App Server(s) needs public keys; low security
 - Easy to deploy App Server(s); e.g., serverless
 - Lower security for App Server(s), logs, debug, etc.
-
-#+name: jwt-auth-vs-app-separate
-#+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-auth-vs-app-separate.jpg :eval never-export
-
-digraph auth_system {
-    // Define subgraphs
-    subgraph top {
-        rank=same;
-        AuthServer [label="Auth Server", shape=box];
-        hidden [style=invis];
-        AppServer [label="App Server(s)", shape=box];
-    }
-
-    subgraph bottom {
-        rank=same;
-        Client [label="Client", shape=box];
-    }
-
-    // Define connections
-    AuthServer -> Client [label="JWT", constraint=false, splines=ortho,style=invis];
-    Client -> AuthServer [label="Authenticate\n(e.g., login\nor OAuth)", constraint=false, splines=ortho,style=invis];
-    Client -> AppServer [label="Send JWT to\nRequest Service", constraint=false, splines=ortho, style=invis];
-
-    // Define hidden edges to force layout
-    AuthServer -> hidden [style=invis];
-    hidden -> AppServer [style=invis];
-    hidden -> Client [style=invis];
-}
-
-#+end_src
-
-#+RESULTS: jwt-auth-vs-app-separate
-[[file:images/jwt-auth-vs-app-separate.jpg]]
-
-
-
 
 
 
@@ -359,7 +411,10 @@ MC4CAQAwBQYDK2VwBCIEIC+D6rD2YbXtV0ccR3smoR0ynhVuyyqvplFLbQWDdAtn
   - indicate username, roles, rights, restrictions, payments
 #+END_NOTES
 
-** Secret Key
+#+COMMENT: May want to set sub-nodes (with **) below to :noexport:
+#+COMMENT: to simplify navigation when doing presentation
+
+** Secret Key   :CodeTool:
 
 #+BEGIN_NOTES
 - We use EdDSA because it is secure, short, and deterministic.
@@ -388,7 +443,7 @@ secret_key = (  # We hard code secret key so you can verify results
 #+RESULTS: create-keys
 
 
-** Public Key
+** Public Key   :CodeTool:
 
 #+name: get-public-key
 #+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
@@ -413,7 +468,7 @@ print(public_key)
 
 
 
-** Encoding Example JWT
+** Encoding Example JWT    :CodeTool:
 
 #+NAME: encoded-jwt
 #+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
@@ -435,7 +490,7 @@ Encoded JWT:
 :   .SU6aXJ0YbH7Vg1jROpQfvnhn98Rt9zBeS7-c5O9jH-
 :   LL5mQqMMFq61eZjf0tLLqExm-dckRUNa3-qT7R2SKmCw
 
-** Decoding Example JWT
+** Decoding Example JWT    :CodeTool:
 
 #+NAME: decoded-jwt
 #+BEGIN_SRC python :session jwt_example :exports both :results output :eval never-export
@@ -455,20 +510,87 @@ Decoded Payload from JWT:
 - *nbf*: Not before (useful for managing life-cycle )
 
 * Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example
+  :END:
 
-Easy to verify/decode using libraries (e.g., =pyjwt=) and compose
-checks using decorators:
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
 
-#+BEGIN_SRC python
-@app.route('/support/urgent')
-@requires_jwt                  # validates JWT
+#+COMMENT: Define a named source block so we can reuse it
+#+COMMENT: later using noweb.
+#+name: example-flask-route 
+#+BEGIN_SRC python :exports code
+@app.route('/support/urgent')  # built-in flask decorator
+@requires_jwt                  # custom decorator to validate JWT
 @jwt_claims(['paid_support'])  # ensures token is for premium user
 @jwt_iat(datetime.timedelta(hours=24))  # ensure recent token
 def support_urgent():
     ... # process ending support request
 #+END_SRC
 
-** Starting Flask
+* Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example-h-1
+  :END:
+
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
+
+#+COMMENT: Indicate that we want to highlight line 1 in the slide with
+#+COMMENT: the given sectionId (based on CUSTOM_ID org property of slide).
+#+html: <script>highlightSlide('slide-python-flask-example-h-1', [1])</script>
+
+#+COMMENT: Now reproduce the previous defined source block using
+#+COMMENT: noweb syntax so we have an exact copy but with highlighting.
+#+BEGIN_SRC python :noweb yes :exports code
+<<example-flask-route>>
+#+END_SRC
+
+* Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example-h-2
+  :END:
+
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
+
+#+html: <script>highlightSlide('slide-python-flask-example-h-2', [2])</script>
+
+#+BEGIN_SRC python :noweb yes :exports code
+<<example-flask-route>>
+#+END_SRC
+
+* Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example-h-3
+  :END:
+
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
+
+#+html: <script>highlightSlide('slide-python-flask-example-h-3', [3])</script>
+
+#+BEGIN_SRC python :noweb yes :exports code
+<<example-flask-route>>
+#+END_SRC
+
+* Python/Flask Example
+  :PROPERTIES:
+  :CUSTOM_ID:       python-flask-example-h-4
+  :END:
+
+- Easy to verify/decode using libraries (e.g., =pyjwt=)
+  - can compose checks using decorators:
+
+#+html: <script>highlightSlide('slide-python-flask-example-h-4', [4])</script>
+
+#+BEGIN_SRC python :noweb yes :exports code
+<<example-flask-route>>
+#+END_SRC
+
+
+** Starting Flask    :CodeTool:
 
 #+name: start-flask
 #+BEGIN_SRC python :session jwt_example :exports code :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -490,6 +612,7 @@ proc = subprocess.Popen([sys.executable, 'app.py'], env=my_env)
 
 * Example of =@requires_jwt=
 
+#+ATTR_REVEAL: :code_attribs data-line-numbers='4|5'
 #+BEGIN_SRC python
 def requires_jwt(func):
     @wraps(func)
@@ -507,7 +630,7 @@ def requires_jwt(func):
     return decorated
 #+END_SRC
 
-** Ensure Valid Token
+** Ensure Valid Token  :CodeTool:
 
 #+name: ensure-valid-token
 #+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -554,7 +677,7 @@ def jwt_claims(claims_list: typing.Sequence[str]):
     return make_decorator
 #+END_SRC
 
-** Ensure Claims (Bad Token)
+** Ensure Claims (Bad Token)  :CodeTool:
 
 #+name: ensure-valid-claims-bad-token
 #+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -572,7 +695,7 @@ print(f'Bad token response:\n  code: {req.status_code}\n'
 :   code: 401
 :   text: Missing claims: ['premium_user']
 
-** Ensure Claims (Bad Claims)
+** Ensure Claims (Bad Claims)   :CodeTool:
 
 #+name: ensure-valid-claims-bad-claim
 #+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -592,7 +715,7 @@ print(f'Premium token response:\n  code: {req.status_code}\n'
 :   code: 401
 :   text: Token age 20193 days, 17:37:05.670865 not within 0:00:30
 
-** Ensure Claims (Success)
+** Ensure Claims (Success)   :CodeTool:
 
 #+name: ensure-valid-claims-good
 #+BEGIN_SRC python :session jwt_example :results output  :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
@@ -661,7 +784,7 @@ def issue():
     return msg
 #+END_SRC
 
-** Python demo
+** Python demo    :CodeTool:
 #+name: proxy-example
 #+BEGIN_SRC python :session jwt_example :results output :exports both :python ~/code/ox_jwt/venv_ox_jwt/bin/python3 :eval never-export
 
@@ -683,15 +806,33 @@ print(req.text)
 
 
 
-* Anti-Patterns
+* Caveats
 
-#+ATTR_REVEAL: :frag (appear appear appear)
+#+ATTR_REVEAL: :frag (appear appear)
 - Beware using header fields to check signature
   - don't trust =alg= field or limit possibilities
     - e.g., ~algorithms=['EdDSA']~
   - be careful with =kid=, =jku=, =jwk=, etc.
 - Don't simulate sessions with JWTs
-- Token revocation issue: access/refresh tokens
+  - Use access/refresh tokens to solve logout/revocation
+
+* Example JKU Header Attack
+
+#+ATTR_REVEAL: :frag (none appear appear)
+- Header can provide URL for key (useful):
+  - src_shell[:exports code]{{alg: "EdDSA", jku: "https://good.com/pk.json"}}
+- Attacker can replace JKU with their own key:
+  - src_shell[:exports code]{{alg: "EdDSA", jku: "https://bad.com/pk.json"}}
+- Don't trust header (validate against whitelist)
+
+* Example ALG Header Attack
+
+#+ATTR_REVEAL: :frag (none appear appear)
+- Header can provide URL for key (useful):
+  - src_shell[:exports code]{{alg: "EdDSA", jku: "https://good.com/pk.json"}}
+- Attacker can replace ALG with symmetric version:
+  - src_shell[:exports code]{{alg: "HS256", jku: "https://bad.com/pk.json"}}
+- Don't trust header (validate against whitelist)
 
 
 * Revocation via Access/Refresh
@@ -720,7 +861,6 @@ server will invalidate refresh token + require new credential check.
 #+name: jwt-get-refresh
 #+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-get-refresh.jpg :eval never-export
 
-
 digraph auth_system {
     // Define subgraphs
     subgraph top {
@@ -747,6 +887,7 @@ digraph auth_system {
 }
 #+END_SRC
 
+#+ATTR_HTML: :width 90%
 #+RESULTS: jwt-get-refresh
 [[file:images/jwt-get-refresh.jpg]]
 
@@ -782,6 +923,7 @@ digraph auth_system {
 }
 #+END_SRC
 
+#+ATTR_HTML: :width 90%
 #+RESULTS: jwt-get-access
 [[file:images/jwt-get-access.jpg]]
 
@@ -817,11 +959,15 @@ digraph auth_system {
 }
 #+END_SRC
 
+#+ATTR_HTML: :width 90%
 #+RESULTS: jwt-use-access
 [[file:images/jwt-use-access.jpg]]
 
 
 * Revocation
+  :PROPERTIES:
+  :ID:       b85213ac-fd6e-4453-a250-141ea99156c6
+  :END:
 
 #+name: jwt-revoke
 #+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/jwt-revoke.jpg :eval never-export
@@ -853,6 +999,7 @@ digraph auth_system {
 }
 #+END_SRC
 
+#+ATTR_HTML: :width 90%
 #+RESULTS: jwt-revoke
 [[file:images/jwt-revoke.jpg]]
 
@@ -871,14 +1018,18 @@ and separate validation from parsing.
 - e.g., NGINX can verify before passing to app server
   #+RESULTS: nginx-example
   [[file:images/nginx-example.jpg]]
-- See implementation in =nginx= directory:
-- https://github.com/aocks/ox_jwt ([[https://github.com/aocks/ox_jwt/blob/main/nginx/conf.d/example.conf#L44][example.conf]])
+- See [[https://github.com/aocks/ox_jwt/blob/main/nginx/conf.d/example.conf#L44][example.conf]] in =nginx= directory on [[https://github.com/aocks/ox_jwt][github.com/aocks/ox_jwt]]
 
+
+#+ATTR_HTML: :width 50%
 #+name: nginx-example
 #+begin_src dot :cmdline -Kdot -Tjpg :exports results :file images/nginx-example.jpg :eval never-export
 
 ,#+BEGIN_SRC dot
 digraph RequestFlow {
+    node [fontsize="30"];
+    edge [fontsize="30"];
+
     rankdir = LR;
     request [label="request\nwith JWT"];
     request -> nginx;
