@@ -27,7 +27,7 @@ This is useful because:
 
 ** python
 
-The slides in [[file:docs/slides.html][docs/slides.html]] provide a detailed presentation of what
+The [[https://aocks.github.io/ox_jwt][overview slides]] provide a detailed presentation of what
 JWTs are and how to use them in python.
 
 You can use JWTs in python with or without nginx. For example, you
