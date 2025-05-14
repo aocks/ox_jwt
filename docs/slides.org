@@ -1,8 +1,9 @@
 
 
+
 #+COMMENT: using timestamp:nil suppresses "created at" in title
 #+COMMENT: using num:nil prevents slide titles being numbered
-#+OPTIONS: timestamp:nil num:nil toc:nil ^:{}
+#+OPTIONS: timestamp:nil num:nil toc:nil ^:{} reveal_single_file:t
 
 #+COMMENT: For generating presentation slides, we do not want to 
 #+COMMENT: export CodeTool slides. But for archived slides, we
@@ -10,7 +11,8 @@
 #+EXCLUDE_TAGS: noexport CodeTool
 
 #+REVEAL_REVEAL_JS_VERSION: 4
-#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
+#+COMMENT: #+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@4.0.0/
+#+REVEAL_ROOT: reveal
 #+REVEAL_PLUGINS: (notes)
 #+REVEAL_THEME: solarized
 #+REVEAL_INIT_OPTIONS: fragments:true, transition:'fade', margin: 0.0001, width:'100%'
