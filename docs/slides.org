@@ -831,7 +831,7 @@ print(req.text)
 - Header can provide URL for key (useful):
   - src_shell[:exports code]{{alg: "EdDSA", jku: "https://good.com/pk.json"}}
 - Attacker can replace ALG with symmetric version:
-  - src_shell[:exports code]{{alg: "HS256", jku: "https://bad.com/pk.json"}}
+  - src_shell[:exports code]{{alg: "HS256", jku: "https://good.com/pk.json"}}
 - Don't trust header (validate against whitelist)
 
 
