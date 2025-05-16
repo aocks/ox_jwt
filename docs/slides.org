@@ -740,7 +740,7 @@ print(f'Recent premium token response:\n  code: {req.status_code}\n'
 #+ATTR_REVEAL: :frag (none appear appear)
 - Auth Server grants JWT letting Alice to act for Bob
 - claims: ={"sub": "Alice", "proxy": "Bob"}=
-- Alice sends request combining to act for Bob
+- Alice sends request to act for Bob
 
 
 * Example Use Case: Proxy
@@ -748,7 +748,7 @@ print(f'Recent premium token response:\n  code: {req.status_code}\n'
 
 - Auth Server grants JWT letting Alice to act for Bob
 - claims: ={"sub": "Alice", "proxy": "Bob"}=
-- Alice sends request combining to act for Bob
+- Alice sends request to act for Bob
 
 #+BEGIN_SRC python
 @APP.route("/issue")
@@ -768,7 +768,7 @@ def issue():
 
 - Auth Server grants JWT letting Alice to act for Bob
 - claims: ={"sub": "Alice", "proxy": "Bob"}=
-- Alice sends request combining to act for Bob
+- Alice sends request to act for Bob
 
 #+BEGIN_SRC python
 @APP.route("/issue")
